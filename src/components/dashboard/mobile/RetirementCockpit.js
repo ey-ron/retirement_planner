@@ -21,6 +21,22 @@ export function calculateAge(birthDateStr) {
   return Math.max(1, Math.min(100, age));
 }
 
+/**
+ * Format a number or numeric string with thousand separators (e.g. 10000 -> "10,000")
+ */
+function formatNumberWithCommas(value) {
+  if (value === null || value === undefined || value === "") return "";
+  const clean = String(value).replace(/[^0-9]/g, "");
+  if (!clean) return "";
+  return Number(clean).toLocaleString("en-US");
+}
+
+function parseNumberClean(str) {
+  if (!str) return 0;
+  const clean = String(str).replace(/[^0-9]/g, "");
+  return clean ? parseInt(clean, 10) : 0;
+}
+
 export default function RetirementCockpit({
   simulationData,
   hasEnteredInfo,
@@ -418,12 +434,11 @@ export default function RetirementCockpit({
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-gray-400">$</span>
                         <input
-                          type="number"
-                          min="1"
-                          step="100"
-                          placeholder="3000"
-                          value={formMonthlyExpense}
-                          onChange={e => setFormMonthlyExpense(e.target.value)}
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="3,000"
+                          value={formatNumberWithCommas(formMonthlyExpense)}
+                          onChange={e => setFormMonthlyExpense(parseNumberClean(e.target.value))}
                           className="w-full py-3.5 pl-10 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-base sm:text-lg outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
                         />
                       </div>
@@ -525,11 +540,11 @@ export default function RetirementCockpit({
                         <div className="relative">
                           <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-black text-gray-400">$</span>
                           <input
-                            type="number"
-                            min="0"
-                            step="1000"
-                            value={formCurrentNestEgg}
-                            onChange={e => setFormCurrentNestEgg(e.target.value)}
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="20,000"
+                            value={formatNumberWithCommas(formCurrentNestEgg)}
+                            onChange={e => setFormCurrentNestEgg(parseNumberClean(e.target.value))}
                             className="w-full py-3 pl-9 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-base outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
                           />
                         </div>
@@ -542,11 +557,11 @@ export default function RetirementCockpit({
                         <div className="relative">
                           <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-black text-gray-400">$</span>
                           <input
-                            type="number"
-                            min="0"
-                            step="100"
-                            value={formMonthlyInvestment}
-                            onChange={e => setFormMonthlyInvestment(e.target.value)}
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="800"
+                            value={formatNumberWithCommas(formMonthlyInvestment)}
+                            onChange={e => setFormMonthlyInvestment(parseNumberClean(e.target.value))}
                             className="w-full py-3 pl-9 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-base outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
                           />
                         </div>
@@ -629,16 +644,24 @@ export default function RetirementCockpit({
                     <div className="p-3.5 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-2 shadow-sm">
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-gray-500 font-medium">Future Monthly Burn (Age {formRetireAge}):</span>
-                        <span className="font-black text-[#1C1C1E] text-sm">${Math.round(stepSimulation.futureMonthlyExpense).toLocaleString()}/mo</span>
+                        <span className="font-black text-[#1C1C1E] text-sm flex items-baseline">
+                          <span className="text-[10px] font-bold text-gray-500 relative -top-[2px] mr-0.5">$</span>
+                          <span>{Math.round(stepSimulation.futureMonthlyExpense).toLocaleString()}</span>
+                          <span className="text-[11px] font-semibold text-gray-500 ml-0.5">/mo</span>
+                        </span>
                       </div>
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-gray-500 font-medium">Required Target Corpus:</span>
-                        <span className="font-black text-[#8A6414] text-base">${Math.round(stepSimulation.requiredCorpus).toLocaleString()}</span>
+                        <span className="font-black text-[#8A6414] text-base flex items-baseline">
+                          <span className="text-[11px] font-bold text-[#8A6414]/75 relative -top-[3px] mr-0.5">$</span>
+                          <span>{Math.round(stepSimulation.requiredCorpus).toLocaleString()}</span>
+                        </span>
                       </div>
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-gray-500 font-medium">Projected Nest Egg:</span>
-                        <span className={`font-black text-base ${stepSimulation.isOnTrack ? 'text-[#2E7D32]' : 'text-orange-600'}`}>
-                          ${Math.round(stepSimulation.projectedNestEgg).toLocaleString()}
+                        <span className={`font-black text-base flex items-baseline ${stepSimulation.isOnTrack ? 'text-[#2E7D32]' : 'text-orange-600'}`}>
+                          <span className={`text-[11px] font-bold relative -top-[3px] mr-0.5 ${stepSimulation.isOnTrack ? 'text-[#2E7D32]/75' : 'text-orange-600/75'}`}>$</span>
+                          <span>{Math.round(stepSimulation.projectedNestEgg).toLocaleString()}</span>
                         </span>
                       </div>
                     </div>
