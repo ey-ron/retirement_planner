@@ -1,0 +1,13 @@
+{
+  "regions": ["sin1"],
+  "crons": [
+    {
+      "path": "/api/cron/snapshot",
+      "schedule": "30 21 * * *"
+    },
+    {
+      "path": "/api/cron/xirr-refresh",
+      "schedule": "0 17 * * *"
+    }
+  ]
+}
