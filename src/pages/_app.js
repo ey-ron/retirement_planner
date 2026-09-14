@@ -15,7 +15,7 @@ export default function App({ Component, pageProps }) {
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="icon" href="/favicon.ico" key="favicon"/>
         <link rel="apple-touch-icon" href="/favicon.ico" key="apple" />
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
       </Head>
       <main className={montserrat.className} suppressHydrationWarning>
         <Component {...pageProps} />
