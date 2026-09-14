@@ -388,13 +388,13 @@ export default function RetirementCockpit({
                       </div>
                     </div>
 
-                    <div className="p-3 sm:p-3.5 bg-[#F8F9FA] border border-black/5 rounded-2xl flex items-center justify-between shadow-sm">
+                    <div className="p-3 sm:p-3.5 bg-[#F8F9FA] border border-black/5 rounded-2xl flex items-center justify-between shadow-sm whitespace-nowrap">
                       <div className="flex flex-col">
-                        <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 uppercase tracking-wider">Calculated Current Age</span>
-                        <span className="text-xs text-gray-600 font-medium">Actuarial baseline</span>
+                        <span className="text-xs sm:text-sm font-bold text-gray-700">Calculated Age</span>
+                        <span className="text-[10px] text-gray-500 font-medium">Actuarial Baseline</span>
                       </div>
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-2xl sm:text-3xl font-black text-[#8A6414]">{formAge}</span>
+                      <div className="flex items-baseline gap-1.5 shrink-0">
+                        <span className="text-xl sm:text-2xl font-black text-[#8A6414]">{formAge}</span>
                         <span className="text-xs font-bold text-gray-500 uppercase">years old</span>
                       </div>
                     </div>
@@ -480,7 +480,7 @@ export default function RetirementCockpit({
 
                       <div className="p-3 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-2 shadow-sm">
                         <div className="flex justify-between items-baseline">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Life Horizon</label>
+                          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Horizon</label>
                           <span className="text-sm font-black text-[#2E7D32]">{formLifeExpectancy} <span className="text-[10px] font-normal text-gray-400">yrs</span></span>
                         </div>
                         <input
@@ -584,7 +584,9 @@ export default function RetirementCockpit({
 
                       <div className="p-3 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-1.5 shadow-sm">
                         <div className="flex justify-between items-baseline">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Inflation</label>
+                          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            Inflation <span className="normal-case font-medium text-[9.5px] text-gray-400">(Estimated)</span>
+                          </label>
                           <span className="text-sm font-black text-[#D32F2F]">{Number(formInflation).toFixed(1)}%</span>
                         </div>
                         <input

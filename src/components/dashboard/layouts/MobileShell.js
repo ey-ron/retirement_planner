@@ -12,8 +12,8 @@ export default function MobileShell({
   return (
     <div className="w-full min-h-screen bg-[#F2F2F7] text-[#1C1C1E] flex flex-col">
       {/* Floating Rounded Rectangle Header */}
-      <div className="w-full max-w-2xl mx-auto pt-4 sm:pt-6 px-4 sticky top-0 z-30 pointer-events-none">
-        <header className="w-full bg-white/85 backdrop-blur-xl border border-black/8 rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] px-4 sm:px-6 py-3.5 flex items-center justify-between pointer-events-auto transition-all">
+      <div className="w-full max-w-2xl mx-auto pt-2 sm:pt-3 px-4 sticky top-0 z-30 pointer-events-none">
+        <header className="w-full bg-white/85 backdrop-blur-xl border border-black/8 rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between pointer-events-auto transition-all">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#C59A3F] to-[#E5C158] flex items-center justify-center text-white shadow-[0_2px_8px_rgba(197,154,63,0.3)] font-black text-xs select-none">
               RS
@@ -26,7 +26,7 @@ export default function MobileShell({
       </div>
 
       {/* Main Responsive Viewport */}
-      <main className="w-full max-w-2xl mx-auto px-4 sm:px-6 pt-4 sm:pt-5 pb-[76px] sm:pb-[82px] flex-1 flex flex-col">
+      <main className="w-full max-w-2xl mx-auto px-4 sm:px-6 pt-2 sm:pt-3 pb-[74px] sm:pb-[78px] flex-1 flex flex-col">
         <RetirementCockpit
           simulationData={simulationData}
           hasEnteredInfo={hasEnteredInfo}
