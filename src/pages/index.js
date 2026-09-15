@@ -29,12 +29,12 @@ export default function Dashboard() {
     <>
       <Head>
         <title>Retirement Simulator</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
         <link rel="icon" href="/icon-512x512.png" key="favicon" />
         <link rel="apple-touch-icon" href="/icon-512x512.png" key="apple" />
       </Head>
 
-      <div className="w-full min-h-screen bg-[#F2F2F7] text-[#1C1C1E] font-sans antialiased" suppressHydrationWarning>
+      <div className="w-full h-full h-[100dvh] max-h-[100dvh] overflow-hidden fixed inset-0 bg-[#F2F2F7] text-[#1C1C1E] font-sans antialiased overscroll-none select-none" suppressHydrationWarning>
         {mounted && <HomeDashboard user={defaultOfflineUser} />}
       </div>
     </>

@@ -168,11 +168,24 @@ export default function RetirementCockpit({
         lifeExpectancy: parseInt(formLifeExpectancy, 10),
         currentNestEgg: parseFloat(formCurrentNestEgg) || 0,
         monthlyInvestment: parseFloat(formMonthlyInvestment) || 0,
-        cagr: parseFloat(formCagr),
-        inflation: parseFloat(formInflation)
+        cagr: parseFloat(formCagr) || 8.0,
+        inflation: parseFloat(formInflation) || 3.5
       });
     }
     setIsEnteringSteps(false);
+  };
+
+  // Robust mobile input focus & scroll handler for virtual keyboard visibility
+  const handleInputScrollFocus = (e) => {
+    const el = e.target;
+    const doScroll = () => {
+      if (el && typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      }
+    };
+    doScroll();
+    setTimeout(doScroll, 150);
+    setTimeout(doScroll, 350);
   };
 
   // Main cockpit calculations
@@ -461,7 +474,7 @@ export default function RetirementCockpit({
               </div>
 
               {/* Step Dynamic Content Area: Scrollable with auto-focus support so inputs are never hidden behind virtual keyboard */}
-              <div className="flex-1 flex flex-col justify-start sm:justify-center py-2 sm:py-3 overflow-y-auto min-h-0">
+              <div className="flex-1 flex flex-col justify-start sm:justify-center py-2 sm:py-3 pb-36 sm:pb-4 overflow-y-auto min-h-0 scroll-smooth">
                 {/* STEP 1 */}
                 {step === 1 && (
                   <div className="flex flex-col gap-3 sm:gap-4 animate-in fade-in duration-200">
@@ -548,22 +561,19 @@ export default function RetirementCockpit({
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                      <label htmlFor="step2-monthly-expense" className="text-[11px] font-bold text-gray-500 uppercase tracking-wider cursor-pointer">
                         Monthly Living Cost Today:
                       </label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-gray-400">$</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-gray-400 pointer-events-none">$</span>
                         <input
+                          id="step2-monthly-expense"
                           type="text"
                           inputMode="numeric"
                           placeholder="3,000"
                           value={formatNumberWithCommas(formMonthlyExpense)}
                           onChange={e => setFormMonthlyExpense(parseNumberClean(e.target.value))}
-                          onFocus={e => {
-                            setTimeout(() => {
-                              e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }, 120);
-                          }}
+                          onFocus={handleInputScrollFocus}
                           className="w-full py-3.5 pl-10 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-lg outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
                         />
                       </div>
@@ -658,44 +668,38 @@ export default function RetirementCockpit({
 
                     <div className="flex flex-col gap-3">
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                        <label htmlFor="step4-nest-egg" className="text-[11px] font-bold text-gray-500 uppercase tracking-wider cursor-pointer">
                           Current Starting Nest Egg:
                         </label>
                         <div className="relative">
-                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-black text-gray-400">$</span>
+                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-black text-gray-400 pointer-events-none">$</span>
                           <input
+                            id="step4-nest-egg"
                             type="text"
                             inputMode="numeric"
                             placeholder="20,000"
                             value={formatNumberWithCommas(formCurrentNestEgg)}
                             onChange={e => setFormCurrentNestEgg(parseNumberClean(e.target.value))}
-                            onFocus={e => {
-                              setTimeout(() => {
-                                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                              }, 120);
-                            }}
+                            onFocus={handleInputScrollFocus}
                             className="w-full py-3 pl-9 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-base outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
                           />
                         </div>
                       </div>
 
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                        <label htmlFor="step4-monthly-contribution" className="text-[11px] font-bold text-gray-500 uppercase tracking-wider cursor-pointer">
                           Planned Monthly Contribution:
                         </label>
                         <div className="relative">
-                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-black text-gray-400">$</span>
+                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-black text-gray-400 pointer-events-none">$</span>
                           <input
+                            id="step4-monthly-contribution"
                             type="text"
                             inputMode="numeric"
                             placeholder="800"
                             value={formatNumberWithCommas(formMonthlyInvestment)}
                             onChange={e => setFormMonthlyInvestment(parseNumberClean(e.target.value))}
-                            onFocus={e => {
-                              setTimeout(() => {
-                                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                              }, 120);
-                            }}
+                            onFocus={handleInputScrollFocus}
                             className="w-full py-3 pl-9 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-base outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
                           />
                         </div>

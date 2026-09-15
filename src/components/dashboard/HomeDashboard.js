@@ -86,7 +86,7 @@ export default function HomeDashboard({ user }) {
   };
 
   return (
-    <div className="w-full min-h-screen relative bg-[#F2F2F7]">
+    <div className="w-full h-full h-[100dvh] max-h-[100dvh] relative bg-[#F2F2F7] overflow-hidden flex flex-col">
       {/* Supernova Splash Screen */}
       {isSplashVisible && (
         <SplashScreen onComplete={() => setIsSplashVisible(false)} />

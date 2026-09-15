@@ -153,12 +153,12 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
 
-  // Auto-swipe carousel every 3 seconds when viewing features
+  // Auto-swipe carousel every 2 seconds when viewing features
   useEffect(() => {
     if (!isOpen || view !== "upgrade") return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % CAROUSEL_SLIDES.length);
-    }, 3000);
+    }, 2000);
     return () => clearInterval(timer);
   }, [isOpen, view]);
 

@@ -8,16 +8,16 @@ export default function App({ Component, pageProps }) {
   return (
     <>
       <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#000000" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        <meta name="theme-color" content="#F2F2F7" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="icon" href="/favicon.ico" key="favicon"/>
         <link rel="apple-touch-icon" href="/favicon.ico" key="apple" />
         <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
       </Head>
-      <main className={montserrat.className} suppressHydrationWarning>
+      <main className={`${montserrat.className} w-full h-full h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col fixed inset-0 overscroll-none`} suppressHydrationWarning>
         <Component {...pageProps} />
       </main>
     </>
