@@ -61,6 +61,31 @@ body {
   inset: 0;
 }
 
+/* Ensure Lemon Squeezy in-page Checkout Overlay is scrollable and sits on top */
+.lemonsqueezy-overlay,
+#lemon-squeezy-overlay,
+div[class*="lemonsqueezy-overlay"] {
+  z-index: 99999999 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: auto !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+  inset: 0 !important;
+  user-select: auto !important;
+  -webkit-user-select: auto !important;
+}
+
+.lemonsqueezy-overlay-iframe,
+iframe[src*="lemonsqueezy.com"] {
+  width: 100% !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: auto !important;
+  pointer-events: auto !important;
+}
+
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
     display: none;

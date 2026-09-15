@@ -12,6 +12,7 @@
     "@google/generative-ai": "^0.24.1",
     "@simplewebauthn/browser": "^13.2.2",
     "@simplewebauthn/server": "^13.2.3",
+    "@supabase/supabase-js": "^2.116.0",
     "chart.js": "^4.5.1",
     "eslint": "^8.35.0",
     "eslint-config-next": "^13.2.1",

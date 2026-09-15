@@ -1,6 +1,26 @@
-export const CURRENT_ADMIN_VERSION = "v1.1.1";
+export const CURRENT_ADMIN_VERSION = "v1.1.3";
 
 export const ADMIN_CHANGE_LOGS = [
+  {
+    version: "v1.1.3",
+    date: "September 16, 2026",
+    title: "Automated Lemon Squeezy Webhook & Direct Full-Page Checkout",
+    items: [
+      "Built '/api/webhooks/lemonsqueezy' webhook route to automatically provision Supabase Pro user profiles and grant instant cloud access upon payment.",
+      "Resolved mobile iframe scroll trapping by opening direct full-screen Lemon Squeezy checkout with native touch scrolling.",
+      "Added multi-device Supabase passwordless magic link & password login handling inside the Pro upgrade modal."
+    ]
+  },
+  {
+    version: "v1.1.2",
+    date: "September 15, 2026",
+    title: "Lemon Squeezy $4.00 Pro Suite Checkout Integration",
+    items: [
+      "Integrated official Lemon Squeezy $4.00 Pro Suite checkout link with embedded Apple Pay, Google Pay, and Card support.",
+      "Embedded Lemon.js SDK for seamless in-app payment overlay flow with automatic fallback.",
+      "Updated Pro CTA button with '$4.00' pricing badge and direct checkout trigger."
+    ]
+  },
   {
     version: "v1.1.1",
     date: "September 15, 2026",

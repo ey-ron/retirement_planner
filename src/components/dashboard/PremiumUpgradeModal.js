@@ -3,6 +3,7 @@ import {
   X, Sparkles, Check, ArrowRight, ChevronLeft, ChevronRight,
   Globe2, TrendingUp, LineChart, ShieldCheck, LogIn
 } from "lucide-react";
+import { supabase } from "../../lib/supabaseClient";
 
 const CAROUSEL_SLIDES = [
   {
@@ -153,6 +154,45 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
 
+  const LEMON_SQUEEZY_CHECKOUT_URL = "https://zxero.lemonsqueezy.com/checkout/buy/d497d281-9bd9-4b5e-96e8-57e7bbf728fb?embed=1";
+
+  // Initialize Lemon.js overlay SDK for seamless in-page checkout and success transition
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const setupLemon = () => {
+      if (window.createLemonSqueezy) {
+        window.createLemonSqueezy();
+      }
+      if (window.LemonSqueezy?.Setup) {
+        window.LemonSqueezy.Setup({
+          eventHandler: (event) => {
+            console.log("[LemonSqueezy Event]", event);
+            if (event.event === "Checkout.Success") {
+              const buyerEmail = event?.data?.attributes?.user_email || event?.data?.attributes?.customer_email || "";
+              if (buyerEmail) {
+                setEmail(buyerEmail);
+              }
+              setView("login");
+              setStatusMsg("🎉 Payment confirmed! Pro account activated. Click below to sign in or get magic link.");
+            }
+          }
+        });
+      }
+    };
+
+    if (!document.getElementById("lemon-squeezy-sdk")) {
+      const script = document.createElement("script");
+      script.id = "lemon-squeezy-sdk";
+      script.src = "https://assets.lemonsqueezy.com/lemon.js";
+      script.defer = true;
+      script.onload = setupLemon;
+      document.body.appendChild(script);
+    } else {
+      setupLemon();
+    }
+  }, []);
+
   // Auto-swipe carousel every 2 seconds when viewing features
   useEffect(() => {
     if (!isOpen || view !== "upgrade") return;
@@ -172,18 +212,42 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
     setCurrentSlide((prev) => (prev - 1 + CAROUSEL_SLIDES.length) % CAROUSEL_SLIDES.length);
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setStatusMsg("");
-    setTimeout(() => {
+    try {
+      if (password) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password
+        });
+        if (error) throw error;
+        setStatusMsg("✅ Welcome back! Pro session restored.");
+        setTimeout(() => {
+          if (onClose) onClose();
+        }, 900);
+      } else {
+        const { error } = await supabase.auth.signInWithOtp({
+          email: email.trim()
+        });
+        if (error) throw error;
+        setStatusMsg("📩 Magic sign-in link sent to your email!");
+      }
+    } catch (err) {
+      setStatusMsg(`⚠️ ${err.message || "Failed to sign in"}`);
+    } finally {
       setLoading(false);
-      setStatusMsg("Logging in with Supabase...");
-    }, 800);
+    }
   };
 
   const handleCheckout = () => {
-    window.open("https://buy.stripe.com/example", "_blank");
+    // Open in-page modal checkout overlay
+    if (typeof window !== "undefined" && window.LemonSqueezy?.Url?.Open) {
+      window.LemonSqueezy.Url.Open(LEMON_SQUEEZY_CHECKOUT_URL);
+    } else {
+      window.open(LEMON_SQUEEZY_CHECKOUT_URL, "_blank");
+    }
   };
 
   const slide = CAROUSEL_SLIDES[currentSlide];
@@ -303,11 +367,13 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[10.5px] font-bold text-gray-600 uppercase">Password</label>
+                <div className="flex justify-between items-center">
+                  <label className="text-[10.5px] font-bold text-gray-600 uppercase">Password</label>
+                  <span className="text-[9.5px] text-gray-400 font-medium">(Optional for Magic Link)</span>
+                </div>
                 <input
                   type="password"
-                  required
-                  placeholder="••••••••"
+                  placeholder="•••••••• or leave blank for OTP"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full py-2 px-3 bg-[#F2F2F7] border border-black/10 rounded-xl font-medium text-xs text-[#1C1C1E] outline-none focus:border-[#C59A3F] focus:bg-white"
@@ -339,9 +405,9 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
               <button
                 type="button"
                 onClick={handleCheckout}
-                className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-amber-900/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="lemonsqueezy-button w-full py-2.5 sm:py-3 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-amber-900/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <span>Unlock Professional Suite</span>
+                <span>Unlock Professional Suite · $4.00</span>
                 <ArrowRight size={14} />
               </button>
 
