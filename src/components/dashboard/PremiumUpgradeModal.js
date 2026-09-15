@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   X, Sparkles, Check, ArrowRight, ChevronLeft, ChevronRight,
-  Globe2, TrendingUp, LineChart, ShieldCheck, LogIn, CheckCircle2
+  Globe2, TrendingUp, LineChart, ShieldCheck, LogIn, CheckCircle2, LogOut
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 
@@ -146,7 +146,7 @@ const CAROUSEL_SLIDES = [
   }
 ];
 
-export default function PremiumUpgradeModal({ isOpen, onClose, onProActivated }) {
+export default function PremiumUpgradeModal({ isOpen, onClose, onProActivated, isPro, onSignOut }) {
   const [view, setView] = useState("upgrade"); // 'upgrade' | 'login' | 'success'
   const [currentSlide, setCurrentSlide] = useState(0);
   const [email, setEmail] = useState("");
@@ -294,6 +294,24 @@ export default function PremiumUpgradeModal({ isOpen, onClose, onProActivated })
     return () => clearInterval(timer);
   }, [isOpen, view]);
 
+  // Synchronize view and buyer details when opening modal
+  useEffect(() => {
+    if (!isOpen) return;
+    if (typeof window !== "undefined") {
+      const storedIsPro = localStorage.getItem("retirement_is_pro") === "true";
+      const storedEmail = localStorage.getItem("retirement_pro_email") || "";
+      const storedName = localStorage.getItem("retirement_pro_name") || "";
+
+      if (storedIsPro || isPro) {
+        setView("success");
+        if (storedEmail) setEmail(storedEmail);
+        if (storedName) setUserName(storedName);
+      } else {
+        setView("upgrade");
+      }
+    }
+  }, [isOpen, isPro]);
+
   if (!isOpen) return null;
 
   const handleNextSlide = () => {
@@ -393,6 +411,28 @@ export default function PremiumUpgradeModal({ isOpen, onClose, onProActivated })
     } catch (e) {}
     if (onProActivated) onProActivated();
     if (onClose) onClose();
+  };
+
+  const handleSignOut = async () => {
+    try {
+      localStorage.removeItem("retirement_is_pro");
+      localStorage.removeItem("retirement_pro_email");
+      localStorage.removeItem("retirement_pro_name");
+    } catch (e) {}
+
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {}
+
+    setEmail("");
+    setUserName("");
+    setView("upgrade");
+    if (onSignOut) {
+      onSignOut();
+    }
+    if (onClose) {
+      onClose();
+    }
   };
 
   const slide = CAROUSEL_SLIDES[currentSlide];
@@ -524,13 +564,24 @@ export default function PremiumUpgradeModal({ isOpen, onClose, onProActivated })
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleFinishSuccess}
-                className="w-full py-2.5 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer mt-0.5"
-              >
-                Enter Pro Dashboard
-              </button>
+              <div className="w-full flex flex-col gap-2 mt-0.5">
+                <button
+                  type="button"
+                  onClick={handleFinishSuccess}
+                  className="w-full py-2.5 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer"
+                >
+                  Enter Pro Dashboard
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="w-full py-2 bg-red-50 hover:bg-red-100 active:scale-98 text-red-600 font-bold text-xs rounded-xl border border-red-200/60 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <LogOut size={13} className="text-red-500" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
             </div>
           ) : (
             /* Restore Pro View Form */

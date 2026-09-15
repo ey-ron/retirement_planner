@@ -1,6 +1,18 @@
-export const CURRENT_ADMIN_VERSION = "v1.1.5";
+export const CURRENT_ADMIN_VERSION = "v1.1.6";
 
 export const ADMIN_CHANGE_LOGS = [
+  {
+    version: "v1.1.6",
+    date: "September 16, 2026",
+    title: "Pro Sign Out, Simulator Reset Button & Custom Dynamic Range Sliders",
+    items: [
+      "Added Pro sign-out action within the Pro Activated modal to clear active Pro sessions and reset back to the standard retirement simulator.",
+      "Configured Pro badge click handler to reliably open the Pro Activated modal with account details and sign-out controls.",
+      "Added a dedicated icon-only Reset action button alongside 'Edit Plan Parameters' to clear simulation data back to the initial trajectory view.",
+      "Replaced native browser slider rendering with custom iOS-style range sliders featuring dynamic gradient track fills to completely eliminate dark/black unfilled backgrounds in dark mode.",
+      "Centered range slider thumbs vertically on 6px tracks with matching theme accent rings."
+    ]
+  },
   {
     version: "v1.1.5",
     date: "September 16, 2026",

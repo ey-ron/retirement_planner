@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import {
   TrendingUp, Shield, Sparkles, Sliders, Calendar,
-  ArrowUpRight, ArrowDownRight, Target, Clock, Coins, CheckCircle2, AlertCircle, AlertTriangle, RefreshCw,
+  ArrowUpRight, ArrowDownRight, Target, Clock, Coins, CheckCircle2, AlertCircle, AlertTriangle, RefreshCw, RotateCcw,
   ChevronRight, ChevronLeft, X, DollarSign
 } from "lucide-react";
 
@@ -620,7 +620,11 @@ export default function RetirementCockpit({
                           step="1"
                           value={formRetireAge}
                           onChange={e => setFormRetireAge(parseInt(e.target.value, 10))}
-                          className="w-full accent-[#C59A3F] cursor-pointer"
+                          className="custom-range-slider"
+                          style={{
+                            "--slider-color": "#C59A3F",
+                            background: `linear-gradient(to right, #C59A3F ${Math.min(100, Math.max(0, ((formRetireAge - (formAge + 1)) / Math.max(1, 80 - (formAge + 1))) * 100))}%, #E5E5EA ${Math.min(100, Math.max(0, ((formRetireAge - (formAge + 1)) / Math.max(1, 80 - (formAge + 1))) * 100))}%)`
+                          }}
                         />
                         <span className="text-[10px] text-gray-500 font-medium">
                           {Math.max(0, formRetireAge - formAge)} yrs from now
@@ -639,7 +643,11 @@ export default function RetirementCockpit({
                           step="1"
                           value={formLifeExpectancy}
                           onChange={e => setFormLifeExpectancy(parseInt(e.target.value, 10))}
-                          className="w-full accent-[#2E7D32] cursor-pointer"
+                          className="custom-range-slider"
+                          style={{
+                            "--slider-color": "#2E7D32",
+                            background: `linear-gradient(to right, #2E7D32 ${Math.min(100, Math.max(0, ((formLifeExpectancy - (formRetireAge + 1)) / Math.max(1, 105 - (formRetireAge + 1))) * 100))}%, #E5E5EA ${Math.min(100, Math.max(0, ((formLifeExpectancy - (formRetireAge + 1)) / Math.max(1, 105 - (formRetireAge + 1))) * 100))}%)`
+                          }}
                         />
                         <span className="text-[10px] text-gray-500 font-medium">
                           {Math.max(0, formLifeExpectancy - formRetireAge)} retirement yrs
@@ -731,7 +739,11 @@ export default function RetirementCockpit({
                           step="0.5"
                           value={formCagr}
                           onChange={e => setFormCagr(parseFloat(e.target.value))}
-                          className="w-full accent-[#2E7D32] cursor-pointer"
+                          className="custom-range-slider"
+                          style={{
+                            "--slider-color": "#2E7D32",
+                            background: `linear-gradient(to right, #2E7D32 ${Math.min(100, Math.max(0, ((formCagr - 2) / (15 - 2)) * 100))}%, #E5E5EA ${Math.min(100, Math.max(0, ((formCagr - 2) / (15 - 2)) * 100))}%)`
+                          }}
                         />
                       </div>
 
@@ -749,7 +761,11 @@ export default function RetirementCockpit({
                           step="0.5"
                           value={formInflation}
                           onChange={e => setFormInflation(parseFloat(e.target.value))}
-                          className="w-full accent-[#D32F2F] cursor-pointer"
+                          className="custom-range-slider"
+                          style={{
+                            "--slider-color": "#D32F2F",
+                            background: `linear-gradient(to right, #D32F2F ${Math.min(100, Math.max(0, ((formInflation - 1) / (8 - 1)) * 100))}%, #E5E5EA ${Math.min(100, Math.max(0, ((formInflation - 1) / (8 - 1)) * 100))}%)`
+                          }}
                         />
                       </div>
                     </div>
@@ -1054,15 +1070,26 @@ export default function RetirementCockpit({
         </div>
       </div>
 
-      {/* 4. Primary Action: Recalculate / Edit Parameters */}
-      <div className="shrink-0 h-12 sm:h-13">
+      {/* 4. Primary Action: Recalculate / Edit Parameters + Reset */}
+      <div className="shrink-0 h-12 sm:h-13 flex items-center gap-2">
         <button
           type="button"
           onClick={() => setIsEnteringSteps(true)}
-          className="w-full h-full px-4 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black uppercase tracking-wider text-xs rounded-xl sm:rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+          className="flex-1 h-full px-4 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black uppercase tracking-wider text-xs rounded-xl sm:rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer truncate"
         >
-          <Sliders size={15} />
-          <span>Edit Plan Parameters</span>
+          <Sliders size={15} className="shrink-0" />
+          <span className="truncate">Edit Plan Parameters</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (onResetInfo) onResetInfo();
+          }}
+          title="Reset Simulation"
+          className="h-full aspect-square bg-white hover:bg-red-50/50 active:scale-95 text-gray-600 hover:text-red-600 font-bold rounded-xl sm:rounded-2xl border border-black/10 shadow-sm transition-all flex items-center justify-center cursor-pointer shrink-0"
+        >
+          <RotateCcw size={16} />
         </button>
       </div>
     </div>

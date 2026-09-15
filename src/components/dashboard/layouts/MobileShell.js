@@ -157,12 +157,17 @@ export default function MobileShell({
       {/* Upgrade / Auth Modal */}
       <PremiumUpgradeModal
         isOpen={isUpgradeModalOpen}
+        isPro={isPro}
         onClose={() => setIsUpgradeModalOpen(false)}
         onProActivated={() => {
           setIsPro(true);
           try {
             setProName(localStorage.getItem("retirement_pro_name") || "");
           } catch (e) {}
+        }}
+        onSignOut={() => {
+          setIsPro(false);
+          setProName("");
         }}
       />
 

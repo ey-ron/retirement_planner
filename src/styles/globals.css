@@ -113,6 +113,62 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
 
+/* Ensure range sliders and form controls always use light system theme */
+:root, html, body {
+  color-scheme: light;
+}
+
+/* Custom iOS-style Range Slider */
+.custom-range-slider {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 100% !important;
+  height: 6px !important;
+  border-radius: 9999px !important;
+  outline: none !important;
+  background-color: #E5E5EA;
+  margin: 6px 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.custom-range-slider::-webkit-slider-runnable-track {
+  height: 6px !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.custom-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 50% !important;
+  background-color: #FFFFFF !important;
+  border: 2.5px solid var(--slider-color, #C59A3F) !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18) !important;
+  cursor: pointer !important;
+  margin-top: -6px !important;
+}
+
+.custom-range-slider::-moz-range-track {
+  height: 6px !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.custom-range-slider::-moz-range-thumb {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 50% !important;
+  background-color: #FFFFFF !important;
+  border: 2.5px solid var(--slider-color, #C59A3F) !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18) !important;
+  cursor: pointer !important;
+}
+
 @keyframes customPing {
   0% {
     transform: scale(1);
