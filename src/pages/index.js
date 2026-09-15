@@ -1,6 +1,6 @@
 import Head from "next/head";
 import React, { useState, useEffect } from "react";
-import HomeDashboard from "../components/dashboard/HomeDashboard";
+import HomeDashboard from "../components/HomeDashboard";
 
 // Default visitor profile
 const defaultOfflineUser = {

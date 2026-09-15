@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import SplashScreen from "./SplashScreen";
-import MobileShell from "./layouts/MobileShell";
+import MobileShell from "./MobileShell";
 
 const DEFAULT_SIMULATION = {
   birthDate: "1995-01-01",

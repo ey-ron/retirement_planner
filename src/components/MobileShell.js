@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import RetirementCockpit from "../mobile/RetirementCockpit";
-import PartnerAdBanner from "../PartnerAdBanner";
-import PremiumUpgradeModal from "../PremiumUpgradeModal";
+import RetirementCockpit from "./RetirementCockpit";
+import PartnerAdBanner from "./PartnerAdBanner";
+import PremiumUpgradeModal from "./PremiumUpgradeModal";
 import { Sparkles } from "lucide-react";
 
 export default function MobileShell({

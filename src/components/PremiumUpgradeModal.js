@@ -3,7 +3,7 @@ import {
   X, Sparkles, Check, ArrowRight, ChevronLeft, ChevronRight,
   Globe2, TrendingUp, LineChart, ShieldCheck, LogIn, CheckCircle2, LogOut
 } from "lucide-react";
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from "../lib/supabaseClient";
 
 const CAROUSEL_SLIDES = [
   {
