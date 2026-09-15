@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { 
-  TrendingUp, Shield, Sparkles, Sliders, Calendar, 
+import {
+  TrendingUp, Shield, Sparkles, Sliders, Calendar,
   ArrowUpRight, ArrowDownRight, Target, Clock, Coins, CheckCircle2, AlertCircle, AlertTriangle, RefreshCw,
   ChevronRight, ChevronLeft, X, DollarSign
 } from "lucide-react";
@@ -253,7 +253,7 @@ export default function RetirementCockpit({
 
     // Highest point in this person's trajectory
     const peakTrajectoryBalance = Math.max(...sim.trajectoryPoints.map(p => p.balance), 1);
-    
+
     // Scale purely against the trajectory peak so the apex dynamically reaches 80-85% of the canvas height
     // This ensures a bold, dramatic curve regardless of shortfall vs target
     const points = sim.trajectoryPoints.map((p, index) => {
@@ -265,7 +265,7 @@ export default function RetirementCockpit({
     });
 
     const pathString = `M ${points.join(" L ")}`;
-    
+
     // Closed area for subtle golden gradient beneath the curve
     const firstX = points[0].split(",")[0];
     const lastX = points[points.length - 1].split(",")[0];
@@ -275,32 +275,32 @@ export default function RetirementCockpit({
     // Calculate prominent milestone ages for the bottom axis
     const totalSpan = Math.max(1, initialLifeExpectancy - activeAge);
     const milestones = [];
-    
+
     // Start age (Current Age)
-    milestones.push({ 
-      age: activeAge, 
-      label: `${activeAge}`, 
+    milestones.push({
+      age: activeAge,
+      label: `${activeAge}`,
       isKey: false,
-      pct: 0 
+      pct: 0
     });
 
     // Intermediate accumulation milestone if gap is at least 12 years
     if (initialRetireAge - activeAge >= 12) {
       const midAccumAge = Math.round(activeAge + (initialRetireAge - activeAge) / 2);
-      milestones.push({ 
-        age: midAccumAge, 
-        label: `${midAccumAge}`, 
+      milestones.push({
+        age: midAccumAge,
+        label: `${midAccumAge}`,
         isKey: false,
-        pct: ((midAccumAge - activeAge) / totalSpan) * 100 
+        pct: ((midAccumAge - activeAge) / totalSpan) * 100
       });
     }
 
     // Key milestone: Retirement Age (parenthesis only, no 'Retire' word)
-    milestones.push({ 
-      age: initialRetireAge, 
-      label: `(${initialRetireAge})`, 
+    milestones.push({
+      age: initialRetireAge,
+      label: `(${initialRetireAge})`,
       isKey: true,
-      pct: ((initialRetireAge - activeAge) / totalSpan) * 100 
+      pct: ((initialRetireAge - activeAge) / totalSpan) * 100
     });
 
     // Check if portfolio runs down to zero after retirement
@@ -317,24 +317,24 @@ export default function RetirementCockpit({
     } else if (initialLifeExpectancy - initialRetireAge >= 16) {
       // Intermediate distribution milestone if horizon after retirement is at least 16 years and doesn't deplete early
       const midDistAge = Math.round(initialRetireAge + (initialLifeExpectancy - initialRetireAge) / 2);
-      milestones.push({ 
-        age: midDistAge, 
-        label: `${midDistAge}`, 
+      milestones.push({
+        age: midDistAge,
+        label: `${midDistAge}`,
         isKey: false,
-        pct: ((midDistAge - activeAge) / totalSpan) * 100 
+        pct: ((midDistAge - activeAge) / totalSpan) * 100
       });
     }
 
     // End milestone: Life Horizon
-    milestones.push({ 
-      age: initialLifeExpectancy, 
-      label: `${initialLifeExpectancy}`, 
+    milestones.push({
+      age: initialLifeExpectancy,
+      label: `${initialLifeExpectancy}`,
       isKey: false,
-      pct: 100 
+      pct: 100
     });
 
-    return { 
-      chartPath: pathString, 
+    return {
+      chartPath: pathString,
       chartAreaPath: areaString,
       milestones,
       zeroDepletionAge: zeroDepletionPoint ? zeroDepletionPoint.age : null,
@@ -386,10 +386,10 @@ export default function RetirementCockpit({
                     <span className="text-[11px] font-bold text-[#8A6414] uppercase tracking-wider mt-0.5">
                       Step {step} of 6 · {
                         step === 1 ? "Birth Date & Age" :
-                        step === 2 ? "Monthly Lifestyle" :
-                        step === 3 ? "Retirement Horizon" :
-                        step === 4 ? "Nest Egg & Savings" :
-                        step === 5 ? "Returns & Inflation" : "Trajectory Forecast"
+                          step === 2 ? "Monthly Lifestyle" :
+                            step === 3 ? "Retirement Horizon" :
+                              step === 4 ? "Nest Egg & Savings" :
+                                step === 5 ? "Returns & Inflation" : "Trajectory Forecast"
                       }
                     </span>
                   </div>
@@ -409,9 +409,8 @@ export default function RetirementCockpit({
                   {[1, 2, 3, 4, 5, 6].map(s => (
                     <div
                       key={s}
-                      className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                        s === step ? 'bg-[#C59A3F] shadow-[0_0_8px_rgba(197,154,63,0.45)]' : s < step ? 'bg-[#C59A3F]/55' : 'bg-black/10'
-                      }`}
+                      className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${s === step ? 'bg-[#C59A3F] shadow-[0_0_8px_rgba(197,154,63,0.45)]' : s < step ? 'bg-[#C59A3F]/55' : 'bg-black/10'
+                        }`}
                     />
                   ))}
                 </div>
@@ -534,11 +533,10 @@ export default function RetirementCockpit({
                           key={amt}
                           type="button"
                           onClick={() => setFormMonthlyExpense(amt)}
-                          className={`flex-1 py-2 sm:py-2.5 rounded-xl text-xs font-bold border transition-all active:scale-95 cursor-pointer shadow-sm ${
-                            Number(formMonthlyExpense) === amt 
-                              ? 'bg-[#C59A3F]/15 border-[#C59A3F] text-[#8A6414] font-black' 
-                              : 'bg-[#F2F2F7] border-black/5 text-gray-600 hover:text-[#1C1C1E]'
-                          }`}
+                          className={`flex-1 py-2 sm:py-2.5 rounded-xl text-xs font-bold border transition-all active:scale-95 cursor-pointer shadow-sm ${Number(formMonthlyExpense) === amt
+                            ? 'bg-[#C59A3F]/15 border-[#C59A3F] text-[#8A6414] font-black'
+                            : 'bg-[#F2F2F7] border-black/5 text-gray-600 hover:text-[#1C1C1E]'
+                            }`}
                         >
                           ${amt.toLocaleString()}
                         </button>
@@ -804,7 +802,7 @@ export default function RetirementCockpit({
   return (
     <div className="w-full h-full flex-1 flex flex-col gap-[6px] overflow-hidden text-[#1C1C1E] animate-in fade-in duration-300">
       {/* 1. Full Hero Card (Corpus Goal Section - comfortably sized) */}
-      <div 
+      <div
         onClick={() => setIsEnteringSteps(true)}
         className="w-full shrink-0 relative text-white rounded-2xl py-2.5 px-3.5 sm:px-4 overflow-hidden shadow-md flex flex-col justify-between z-20 select-none border border-black/5 cursor-pointer active:scale-[0.99] transition-all"
         style={{
@@ -847,8 +845,8 @@ export default function RetirementCockpit({
             <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/75">
               Target Corpus
             </span>
-            <span className="text-[17px] sm:text-[19px] font-black tracking-tight text-white leading-none flex items-baseline">
-              <span className="text-[11px] sm:text-[12px] font-bold text-white/80 relative -top-[4px] mr-0.5">$</span>
+            <span className="text-[15px] sm:text-[16px] font-black tracking-tight text-white leading-none flex items-baseline">
+              <span className="text-[10px] sm:text-[11px] font-bold text-white/80 relative -top-[3px] mr-0.5">$</span>
               <span>{Math.round(sim.requiredCorpus).toLocaleString()}</span>
             </span>
           </div>
@@ -858,8 +856,8 @@ export default function RetirementCockpit({
             <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/75">
               Projected Savings
             </span>
-            <span className={`text-[17px] sm:text-[19px] font-black tracking-tight leading-none flex items-baseline ${sim.isOnTrack ? 'text-[#85E394]' : 'text-orange-200'}`}>
-              <span className={`text-[11px] sm:text-[12px] font-bold relative -top-[4px] mr-0.5 ${sim.isOnTrack ? 'text-[#85E394]/80' : 'text-orange-200/80'}`}>$</span>
+            <span className={`text-[15px] sm:text-[16px] font-black tracking-tight leading-none flex items-baseline ${sim.isOnTrack ? 'text-[#85E394]' : 'text-orange-200'}`}>
+              <span className={`text-[10px] sm:text-[11px] font-bold relative -top-[3px] mr-0.5 ${sim.isOnTrack ? 'text-[#85E394]/80' : 'text-orange-200/80'}`}>$</span>
               <span>{Math.round(sim.projectedNestEgg).toLocaleString()}</span>
             </span>
           </div>
@@ -906,7 +904,7 @@ export default function RetirementCockpit({
             />
           </svg>
 
-          <div 
+          <div
             className="absolute top-1 bottom-1 w-0.5 border-r border-dashed border-[#8A6414]/40 flex items-center justify-center"
             style={{
               left: `${Math.max(5, Math.min(95, ((initialRetireAge - activeAge) / (initialLifeExpectancy - activeAge)) * 100))}%`
@@ -919,7 +917,7 @@ export default function RetirementCockpit({
 
           {/* Red depletion indicator if balance hits $0 before life horizon */}
           {zeroDepletionPct !== null && (
-            <div 
+            <div
               className="absolute top-1 bottom-1 w-0.5 border-r border-dashed border-red-500/50 flex items-center justify-center"
               style={{
                 left: `${Math.max(5, Math.min(95, zeroDepletionPct))}%`
@@ -942,13 +940,12 @@ export default function RetirementCockpit({
                 left: `${m.pct === 0 ? 3 : m.pct === 100 ? 97 : m.pct}%`
               }}
             >
-              <span className={`text-[8.5px] sm:text-[9px] leading-none whitespace-nowrap font-bold ${
-                m.isZero
-                  ? 'text-red-600 font-black'
-                  : m.isKey 
-                    ? 'text-[#8A6414] font-black' 
-                    : 'text-gray-400'
-              }`}>
+              <span className={`text-[8.5px] sm:text-[9px] leading-none whitespace-nowrap font-bold ${m.isZero
+                ? 'text-red-600 font-black'
+                : m.isKey
+                  ? 'text-[#8A6414] font-black'
+                  : 'text-gray-400'
+                }`}>
                 {m.label}
               </span>
             </div>
@@ -974,13 +971,13 @@ export default function RetirementCockpit({
             Markets don't move in a straight line.
           </h4>
           <p className="text-[10.5px] sm:text-[11px] text-gray-600 leading-snug">
-            A linear {initialCagr}% return looks safe on paper—until an early bear market cuts your retirement years in half. Unlock Monte Carlo stress-testing to see how your nest egg survives actual market downturns.
+            A linear {initialCagr}% return looks safe on paper, until an early bear market cuts your retirement years in half. Unlock Professional Standards and Monte Carlo stress-testing to see how your nest egg survives actual market downturns.
           </p>
         </div>
 
         <div className="pt-1 border-t border-black/5 flex items-center justify-between shrink-0">
           <span className="text-[9.5px] font-bold text-[#8A6414]">
-            1,000+ Market Simulations
+            10,000+ Market Simulations
           </span>
           <span className="text-[9.5px] font-semibold text-gray-400">
             Available in Premium
@@ -992,7 +989,7 @@ export default function RetirementCockpit({
       <div className="flex gap-2 shrink-0 h-12 sm:h-13">
         <button
           type="button"
-          onClick={() => {}}
+          onClick={() => { }}
           className="flex-1 h-full px-4 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black uppercase tracking-wider text-xs rounded-xl sm:rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
           <Sparkles size={16} />
