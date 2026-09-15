@@ -53,22 +53,6 @@
 - **Always Allowed Commands**:
   - `node -e` commands are ALWAYS allowed to be run autonomously at any time without requiring user confirmation. Use them freely for inline calculations, quick evaluations, mathematical verification, and test scripts.
 
-## Changelog & Release Management Rules
-- **Admin Changelog (`src/components/dashboard/AdminChangeLog.js`)**:
-  - **MANDATORY ON EVERY PUSH**: Every time the user instructs to push to main (e.g., "push to main", "push to git main", "commit and push"):
-    1. AUTOMATICALLY update `src/components/dashboard/AdminChangeLog.js` BEFORE committing and pushing.
-    2. Bump `CURRENT_ADMIN_VERSION` (e.g. from `v1.0.3` to `v1.0.4` or matching patch version) so the admin popup triggers on their next session.
-    3. Add a new release entry at the top of `ADMIN_CHANGE_LOGS` with:
-       - `version`: The new version string
-       - `date`: Current date (e.g. "September 6, 2026")
-       - `title`: Concise descriptive title of the update
-       - `items`: Bullet points detailing all technical, functional, and UI changes in this push
-    4. Ensure `AdminChangeLog.js` is staged and included in the single chained git commit & push command.
-    5. This changelog is strictly visible ONLY to admins (`isAdmin === true`).
-- **Public Changelog (`src/components/dashboard/ChangeLog.js`)**:
-  - NEVER update the public user-facing changelog (`ChangeLog.js`) during routine pushes.
-  - ONLY update `ChangeLog.js` when the user explicitly and specifically asks to update the public changelog.
-
 ## Interaction & Output Rules
 - **Token Usage Reporting**:
   - On every response moving forward, always provide a token count summary (Prompt Tokens, Response Tokens, and Total Tokens for the turn).

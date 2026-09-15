@@ -10,40 +10,40 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { email, orderId } = req.body || {};
+    const { email } = req.body || {};
     const cleanEmail = (email || "").trim().toLowerCase();
 
     if (!cleanEmail || !cleanEmail.includes("@")) {
       return res.status(400).json({ success: false, message: "Please provide a valid email address." });
     }
 
-    // 1. Check Supabase profiles / pro_licenses
-    try {
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("id, email, full_name, is_pro")
-        .eq("email", cleanEmail)
-        .maybeSingle();
+    // Check Supabase pro_licenses table
+    const { data: license, error: licErr } = await supabase
+      .from("pro_licenses")
+      .select("id, email, name, is_pro, lemon_order_id")
+      .ilike("email", cleanEmail)
+      .maybeSingle();
 
-      if (profile && profile.is_pro) {
-        return res.status(200).json({
-          success: true,
-          isPro: true,
-          email: cleanEmail,
-          name: profile.full_name || "",
-          message: "Pro access verified from database."
-        });
-      }
-    } catch (dbErr) {
-      console.warn("[Restore Pro] DB lookup notice:", dbErr.message);
+    if (licErr) {
+      console.error("[Restore Pro] pro_licenses error:", licErr);
+      return res.status(500).json({ success: false, message: licErr.message });
     }
 
-    // 2. If valid email format and requested restore post-checkout, grant Pro restoration
-    return res.status(200).json({
-      success: true,
-      isPro: true,
-      email: cleanEmail,
-      message: "Pro license verified successfully."
+    if (license && license.is_pro) {
+      return res.status(200).json({
+        success: true,
+        isPro: true,
+        email: license.email,
+        name: license.name || "",
+        message: "Pro license verified successfully."
+      });
+    }
+
+    // If no active license found in pro_licenses
+    return res.status(404).json({
+      success: false,
+      isPro: false,
+      message: "No active Pro license found for this email. Please check your purchase email or purchase Pro."
     });
   } catch (err) {
     console.error("[Restore Pro Error]:", err);

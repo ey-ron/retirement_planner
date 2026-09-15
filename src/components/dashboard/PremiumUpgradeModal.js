@@ -176,16 +176,12 @@ export default function PremiumUpgradeModal({ isOpen, onClose, onProActivated, i
     };
 
     const setupLemon = () => {
-      console.log("🍋 [LemonSqueezy SDK] Setting up Lemon.js event listener...");
       if (window.createLemonSqueezy) {
         window.createLemonSqueezy();
       }
       if (window.LemonSqueezy?.Setup) {
         window.LemonSqueezy.Setup({
           eventHandler: (event) => {
-            console.log("🍋 [LemonSqueezy Event Fired]:", event?.event || event);
-            console.log("🍋 [LemonSqueezy Full Payload]:", JSON.stringify(event, null, 2));
-            
             if (event.event === "Checkout.Success" || event === "Checkout.Success" || event?.data?.event === "Checkout.Success") {
               // 1. Instantly close & remove Lemon Squeezy overlay to skip third-party thank you receipt
               try {
@@ -201,13 +197,22 @@ export default function PremiumUpgradeModal({ isOpen, onClose, onProActivated, i
 
               // 2. Extract buyer email & full name across Lemon.js order.data.attributes hierarchy
               const { email: buyerEmail, name: buyerName, attrs } = extractLemonAttributes(event);
-              console.log("🍋 [Extracted Buyer Info]:", { buyerEmail, buyerName, attrs });
 
               if (buyerEmail) {
                 setEmail(buyerEmail);
                 try {
                   localStorage.setItem("retirement_pro_email", buyerEmail);
                 } catch (e) {}
+                // Persist license to Supabase database
+                fetch("/api/auth/record-purchase", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    email: buyerEmail,
+                    name: buyerName || "",
+                    orderId: String(attrs.id || attrs.order_number || "")
+                  })
+                }).catch(() => {});
               }
               if (buyerName) {
                 setUserName(buyerName);
@@ -237,7 +242,6 @@ export default function PremiumUpgradeModal({ isOpen, onClose, onProActivated, i
       try {
         const rawData = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
         if (rawData?.event === "Checkout.Success" || rawData?.name === "Checkout.Success") {
-          console.log("🍋 [postMessage Checkout.Success Detected]:", rawData);
           try {
             if (window.LemonSqueezy?.Url?.Close) {
               window.LemonSqueezy.Url.Close();
@@ -247,12 +251,21 @@ export default function PremiumUpgradeModal({ isOpen, onClose, onProActivated, i
             document.querySelectorAll(".lemonsqueezy-overlay, iframe[src*='lemonsqueezy']").forEach((el) => el.remove());
           } catch (e) {}
           
-          const { email: buyerEmail, name: buyerName } = extractLemonAttributes(rawData);
-          console.log("🍋 [postMessage Extracted]:", { buyerEmail, buyerName });
+          const { email: buyerEmail, name: buyerName, attrs } = extractLemonAttributes(rawData);
 
           if (buyerEmail) {
             setEmail(buyerEmail);
             try { localStorage.setItem("retirement_pro_email", buyerEmail); } catch (e) {}
+            // Persist license to Supabase database
+            fetch("/api/auth/record-purchase", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: buyerEmail,
+                name: buyerName || "",
+                orderId: String(attrs?.id || attrs?.order_number || "")
+              })
+            }).catch(() => {});
           }
           if (buyerName) {
             setUserName(buyerName);
@@ -396,7 +409,6 @@ export default function PremiumUpgradeModal({ isOpen, onClose, onProActivated, i
     if (email && email.trim()) {
       url += `&checkout[email]=${encodeURIComponent(email.trim())}`;
     }
-    console.log("🍋 [handleCheckout Opening URL]:", url, "userName state:", userName, "email state:", email);
     // Open in-page modal checkout overlay
     if (typeof window !== "undefined" && window.LemonSqueezy?.Url?.Open) {
       window.LemonSqueezy.Url.Open(url);
