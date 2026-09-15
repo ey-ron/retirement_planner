@@ -16,9 +16,11 @@ export default function MobileShell({
       <div className="w-full max-w-2xl mx-auto pt-2 sm:pt-3 px-4 shrink-0 z-30">
         <header className="w-full bg-white/85 backdrop-blur-xl border border-black/8 rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between transition-all">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#C59A3F] to-[#E5C158] flex items-center justify-center text-white shadow-[0_2px_8px_rgba(197,154,63,0.3)] font-black text-xs select-none">
-              RS
-            </div>
+            <img
+              src="/icon-192x192.png"
+              alt="Retirement Simulator Icon"
+              className="w-8 h-8 rounded-xl object-contain shadow-[0_2px_8px_rgba(0,0,0,0.08)] select-none shrink-0"
+            />
             <span className="text-base sm:text-lg font-black tracking-tight text-[#1C1C1E]">
               Retirement Simulator
             </span>
