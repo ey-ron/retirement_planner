@@ -14,6 +14,15 @@ export default function MobileShell({
 }) {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [isPro, setIsPro] = useState(false);
+  const [proName, setProName] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsPro(localStorage.getItem("retirement_is_pro") === "true");
+      setProName(localStorage.getItem("retirement_pro_name") || "");
+    }
+  }, []);
 
   // Detect mobile virtual keyboard via visualViewport resize or input focus
   useEffect(() => {
@@ -27,23 +36,18 @@ export default function MobileShell({
     };
 
     const handleFocusOut = () => {
-      // Small timeout to avoid rapid flash when switching between inputs
       setTimeout(() => {
         const activeTag = document.activeElement?.tagName?.toLowerCase();
         if (activeTag !== "input" && activeTag !== "textarea" && activeTag !== "select") {
           setIsKeyboardOpen(false);
         }
-      }, 150);
+      }, 100);
     };
 
-    // Modern mobile visual viewport tracking
-    let initialHeight = window.visualViewport?.height || window.innerHeight;
     const handleViewportResize = () => {
-      if (window.visualViewport) {
-        // If viewport shrinks by more than 120px, the soft keyboard is open
-        const isShrunk = initialHeight - window.visualViewport.height > 120;
-        setIsKeyboardOpen(isShrunk);
-      }
+      if (!window.visualViewport) return;
+      const isKeyboard = window.innerHeight - window.visualViewport.height > 150;
+      setIsKeyboardOpen(isKeyboard);
     };
 
     window.addEventListener("focusin", handleFocusIn);
@@ -72,41 +76,97 @@ export default function MobileShell({
               alt="Retirement Simulator Icon"
               className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl object-contain shadow-[0_2px_8px_rgba(0,0,0,0.08)] select-none shrink-0"
             />
-            <span className="text-sm sm:text-base font-black tracking-tight text-[#1C1C1E] truncate">
-              Retirement Simulator
-            </span>
+            {isPro ? (
+              <div className="flex flex-col min-w-0 leading-tight">
+                <span className="text-sm sm:text-base font-black tracking-tight text-[#1C1C1E] truncate">
+                  {proName || "Pro Member"}
+                </span>
+                <span className="text-[10px] sm:text-[11px] font-semibold text-[#8A6414] tracking-tight truncate">
+                  Retirement Journey
+                </span>
+              </div>
+            ) : (
+              <span className="text-sm sm:text-base font-black tracking-tight text-[#1C1C1E] truncate">
+                Retirement Simulator
+              </span>
+            )}
           </div>
 
-          {/* Header Action: Go Pro Button */}
-          <button
-            type="button"
-            onClick={() => setIsUpgradeModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-95 text-white font-extrabold text-[11px] shadow-[0_2px_10px_rgba(197,154,63,0.3)] transition-all cursor-pointer shrink-0"
-          >
-            <Sparkles size={13} className="text-amber-200" />
-            <span>Go Pro</span>
-          </button>
+          {/* Header Action: Pro Badge or Go Pro CTA */}
+          {isPro ? (
+            <button
+              type="button"
+              onClick={() => setIsUpgradeModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 font-black text-[11px] shadow-sm cursor-pointer shrink-0"
+            >
+              <Sparkles size={13} className="text-emerald-600" />
+              <span>Pro</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsUpgradeModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-95 text-white font-extrabold text-[11px] shadow-[0_2px_10px_rgba(197,154,63,0.3)] transition-all cursor-pointer shrink-0"
+            >
+              <Sparkles size={13} className="text-amber-200" />
+              <span>Go Pro</span>
+            </button>
+          )}
         </header>
       </div>
 
       {/* Main Responsive Viewport */}
       <main className="w-full max-w-2xl mx-auto px-4 sm:px-6 pt-2 sm:pt-3 pb-2 flex-1 flex flex-col min-h-0 overflow-hidden">
-        <RetirementCockpit
-          simulationData={simulationData}
-          hasEnteredInfo={hasEnteredInfo}
-          onUpdateParam={onUpdateParam}
-          onUpdateFullPlan={onUpdateFullPlan}
-          onResetInfo={onResetInfo}
-        />
+        {isPro ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-white/80 backdrop-blur-xl border border-black/8 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.04)] animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#C59A3F] to-[#E5C158] flex items-center justify-center text-white shadow-lg shadow-amber-500/20 mb-3.5 animate-pulse">
+              <Sparkles size={28} />
+            </div>
+
+            <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-200/80 mb-2">
+              Pro Member Access
+            </span>
+
+            <h3 className="text-xl font-black text-[#1C1C1E] tracking-tight mb-2">
+              Under Development
+            </h3>
+
+            <p className="text-xs text-gray-600 max-w-sm leading-relaxed mb-5">
+              We are actively building the dedicated Pro Suite features, including 10,000+ Monte Carlo engine, advanced asset modeling, and cloud scenario syncing. Check back soon for the full release!
+            </p>
+
+            <div className="w-full max-w-xs p-3 bg-[#F8F9FA] rounded-2xl border border-black/5 flex items-center justify-between text-xs text-gray-600">
+              <span className="font-semibold text-gray-500">License Status:</span>
+              <span className="font-bold text-emerald-600 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                Active Pro
+              </span>
+            </div>
+          </div>
+        ) : (
+          <RetirementCockpit
+            simulationData={simulationData}
+            hasEnteredInfo={hasEnteredInfo}
+            onUpdateParam={onUpdateParam}
+            onUpdateFullPlan={onUpdateFullPlan}
+            onResetInfo={onResetInfo}
+          />
+        )}
       </main>
 
       {/* Upgrade / Auth Modal */}
       <PremiumUpgradeModal
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
+        onProActivated={() => {
+          setIsPro(true);
+          try {
+            setProName(localStorage.getItem("retirement_pro_name") || "");
+          } catch (e) {}
+        }}
       />
 
-      {/* 50px Height Bottom Partner Placement (auto-hidden when mobile keyboard is open) */}
+      {/* 50px Height Bottom Partner Placement (hidden only when keyboard is open) */}
       {!isKeyboardOpen && (
         <div className="w-full shrink-0 z-40 bg-white/95 backdrop-blur-md border-t border-black/8 px-4 py-2 flex items-center justify-center shadow-[0_-4px_16px_rgba(0,0,0,0.04)] animate-in fade-in duration-150">
           <div className="w-full max-w-2xl mx-auto flex items-center justify-center">

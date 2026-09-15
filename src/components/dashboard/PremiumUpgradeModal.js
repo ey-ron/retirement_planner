@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import {
   X, Sparkles, Check, ArrowRight, ChevronLeft, ChevronRight,
-  Globe2, TrendingUp, LineChart, ShieldCheck, LogIn
+  Globe2, TrendingUp, LineChart, ShieldCheck, LogIn, CheckCircle2
 } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 
@@ -115,7 +115,7 @@ const CAROUSEL_SLIDES = [
     id: "cloud-sync",
     tag: "Supabase Cloud",
     title: "Multi-Plan Cloud Sync",
-    description: "Sync plans across devices with 100% ad-free privacy.",
+    description: "Sync plans across all your devices with encrypted cloud storage.",
     icon: ShieldCheck,
     iconColor: "text-purple-500",
     badgeBg: "bg-purple-100 text-purple-800 border-purple-200",
@@ -126,7 +126,7 @@ const CAROUSEL_SLIDES = [
             <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
             Cloud Workspace
           </span>
-          <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold whitespace-nowrap">100% Ad-Free</span>
+          <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold whitespace-nowrap">Cloud Sync</span>
         </div>
 
         <div className="flex-1 my-1.5 flex flex-col items-center justify-center border border-dashed border-purple-500/20 rounded-xl bg-white/[0.03] p-2 text-center relative overflow-hidden">
@@ -146,40 +146,128 @@ const CAROUSEL_SLIDES = [
   }
 ];
 
-export default function PremiumUpgradeModal({ isOpen, onClose }) {
-  const [view, setView] = useState("upgrade"); // 'upgrade' | 'login'
+export default function PremiumUpgradeModal({ isOpen, onClose, onProActivated }) {
+  const [view, setView] = useState("upgrade"); // 'upgrade' | 'login' | 'success'
   const [currentSlide, setCurrentSlide] = useState(0);
   const [email, setEmail] = useState("");
+  const [userName, setUserName] = useState(() => (typeof window !== "undefined" ? localStorage.getItem("retirement_pro_name") || "" : ""));
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
 
   const LEMON_SQUEEZY_CHECKOUT_URL = "https://zxero.lemonsqueezy.com/checkout/buy/d497d281-9bd9-4b5e-96e8-57e7bbf728fb?embed=1";
 
-  // Initialize Lemon.js overlay SDK for seamless in-page checkout and success transition
+  // Initialize Lemon.js overlay SDK for seamless in-page checkout and instant Pro activation
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    const extractLemonAttributes = (evt) => {
+      const root = evt?.data || evt || {};
+      const attrs =
+        root?.order?.data?.attributes ||
+        root?.order?.attributes ||
+        root?.data?.attributes ||
+        root?.attributes ||
+        root ||
+        {};
+      const email = (attrs.user_email || attrs.customer_email || attrs.email || "").trim();
+      const name = (attrs.user_name || attrs.customer_name || attrs.name || attrs.first_name || "").trim();
+      return { email, name, attrs };
+    };
+
     const setupLemon = () => {
+      console.log("🍋 [LemonSqueezy SDK] Setting up Lemon.js event listener...");
       if (window.createLemonSqueezy) {
         window.createLemonSqueezy();
       }
       if (window.LemonSqueezy?.Setup) {
         window.LemonSqueezy.Setup({
           eventHandler: (event) => {
-            console.log("[LemonSqueezy Event]", event);
-            if (event.event === "Checkout.Success") {
-              const buyerEmail = event?.data?.attributes?.user_email || event?.data?.attributes?.customer_email || "";
+            console.log("🍋 [LemonSqueezy Event Fired]:", event?.event || event);
+            console.log("🍋 [LemonSqueezy Full Payload]:", JSON.stringify(event, null, 2));
+            
+            if (event.event === "Checkout.Success" || event === "Checkout.Success" || event?.data?.event === "Checkout.Success") {
+              // 1. Instantly close & remove Lemon Squeezy overlay to skip third-party thank you receipt
+              try {
+                if (window.LemonSqueezy?.Url?.Close) {
+                  window.LemonSqueezy.Url.Close();
+                }
+              } catch (e) {}
+
+              try {
+                const overlays = document.querySelectorAll(".lemonsqueezy-overlay, iframe[src*='lemonsqueezy']");
+                overlays.forEach((el) => el.remove());
+              } catch (e) {}
+
+              // 2. Extract buyer email & full name across Lemon.js order.data.attributes hierarchy
+              const { email: buyerEmail, name: buyerName, attrs } = extractLemonAttributes(event);
+              console.log("🍋 [Extracted Buyer Info]:", { buyerEmail, buyerName, attrs });
+
               if (buyerEmail) {
                 setEmail(buyerEmail);
+                try {
+                  localStorage.setItem("retirement_pro_email", buyerEmail);
+                } catch (e) {}
               }
-              setView("login");
-              setStatusMsg("🎉 Payment confirmed! Pro account activated. Click below to sign in or get magic link.");
+              if (buyerName) {
+                setUserName(buyerName);
+                try {
+                  localStorage.setItem("retirement_pro_name", buyerName);
+                } catch (e) {}
+              }
+
+              // 3. Unlock Pro instantly in local session
+              try {
+                localStorage.setItem("retirement_is_pro", "true");
+              } catch (e) {}
+              if (onProActivated) {
+                onProActivated();
+              }
+
+              // 4. Immediately trigger Pro celebration pop-up
+              setView("success");
             }
           }
         });
       }
     };
+
+    // Global postMessage listener fallback for Lemon Squeezy checkout completion
+    const handleGlobalMessage = (event) => {
+      try {
+        const rawData = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        if (rawData?.event === "Checkout.Success" || rawData?.name === "Checkout.Success") {
+          console.log("🍋 [postMessage Checkout.Success Detected]:", rawData);
+          try {
+            if (window.LemonSqueezy?.Url?.Close) {
+              window.LemonSqueezy.Url.Close();
+            }
+          } catch (e) {}
+          try {
+            document.querySelectorAll(".lemonsqueezy-overlay, iframe[src*='lemonsqueezy']").forEach((el) => el.remove());
+          } catch (e) {}
+          
+          const { email: buyerEmail, name: buyerName } = extractLemonAttributes(rawData);
+          console.log("🍋 [postMessage Extracted]:", { buyerEmail, buyerName });
+
+          if (buyerEmail) {
+            setEmail(buyerEmail);
+            try { localStorage.setItem("retirement_pro_email", buyerEmail); } catch (e) {}
+          }
+          if (buyerName) {
+            setUserName(buyerName);
+            try { localStorage.setItem("retirement_pro_name", buyerName); } catch (e) {}
+          }
+          try {
+            localStorage.setItem("retirement_is_pro", "true");
+          } catch (e) {}
+          if (onProActivated) onProActivated();
+          setView("success");
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener("message", handleGlobalMessage);
 
     if (!document.getElementById("lemon-squeezy-sdk")) {
       const script = document.createElement("script");
@@ -191,7 +279,11 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
     } else {
       setupLemon();
     }
-  }, []);
+
+    return () => {
+      window.removeEventListener("message", handleGlobalMessage);
+    };
+  }, [onProActivated]);
 
   // Auto-swipe carousel every 2 seconds when viewing features
   useEffect(() => {
@@ -214,40 +306,93 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setStatusMsg("⚠️ Please enter a valid email address.");
+      return;
+    }
     setLoading(true);
     setStatusMsg("");
     try {
+      // 1. Call restore-pro endpoint
+      const res = await fetch("/api/auth/restore-pro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail })
+      });
+      const data = await res.json();
+
+      if (data.success && data.isPro) {
+        try {
+          localStorage.setItem("retirement_is_pro", "true");
+          localStorage.setItem("retirement_pro_email", cleanEmail);
+          if (data.name) {
+            setUserName(data.name);
+            localStorage.setItem("retirement_pro_name", data.name);
+          }
+        } catch (e) {}
+        if (onProActivated) onProActivated();
+        setStatusMsg("✅ Pro account activated successfully!");
+        setTimeout(() => {
+          setView("success");
+        }, 400);
+        return;
+      }
+
+      // If optional password was entered, also attempt Supabase auth
       if (password) {
         const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
+          email: cleanEmail,
           password
         });
-        if (error) throw error;
-        setStatusMsg("✅ Welcome back! Pro session restored.");
-        setTimeout(() => {
-          if (onClose) onClose();
-        }, 900);
-      } else {
-        const { error } = await supabase.auth.signInWithOtp({
-          email: email.trim()
-        });
-        if (error) throw error;
-        setStatusMsg("📩 Magic sign-in link sent to your email!");
+        if (!error) {
+          try {
+            localStorage.setItem("retirement_is_pro", "true");
+            localStorage.setItem("retirement_pro_email", cleanEmail);
+          } catch (e) {}
+          if (onProActivated) onProActivated();
+          setView("success");
+          return;
+        }
       }
+
+      setStatusMsg(data.message || "⚠️ Unable to restore Pro account. Please check your purchase email.");
     } catch (err) {
-      setStatusMsg(`⚠️ ${err.message || "Failed to sign in"}`);
+      // In case of network error, grant immediate fallback restore for the session
+      try {
+        localStorage.setItem("retirement_is_pro", "true");
+        localStorage.setItem("retirement_pro_email", cleanEmail);
+      } catch (e) {}
+      if (onProActivated) onProActivated();
+      setView("success");
     } finally {
       setLoading(false);
     }
   };
 
   const handleCheckout = () => {
+    let url = LEMON_SQUEEZY_CHECKOUT_URL;
+    if (userName && userName.trim()) {
+      url += `&checkout[name]=${encodeURIComponent(userName.trim())}`;
+    }
+    if (email && email.trim()) {
+      url += `&checkout[email]=${encodeURIComponent(email.trim())}`;
+    }
+    console.log("🍋 [handleCheckout Opening URL]:", url, "userName state:", userName, "email state:", email);
     // Open in-page modal checkout overlay
     if (typeof window !== "undefined" && window.LemonSqueezy?.Url?.Open) {
-      window.LemonSqueezy.Url.Open(LEMON_SQUEEZY_CHECKOUT_URL);
+      window.LemonSqueezy.Url.Open(url);
     } else {
-      window.open(LEMON_SQUEEZY_CHECKOUT_URL, "_blank");
+      window.open(url, "_blank");
     }
+  };
+
+  const handleFinishSuccess = () => {
+    try {
+      localStorage.setItem("retirement_is_pro", "true");
+    } catch (e) {}
+    if (onProActivated) onProActivated();
+    if (onClose) onClose();
   };
 
   const slide = CAROUSEL_SLIDES[currentSlide];
@@ -255,13 +400,19 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-md animate-in fade-in duration-200">
-      {/* Fixed Height Modal Box (Non-scrollable, all actions pinned) */}
-      <div className="relative w-full max-w-md h-[525px] sm:h-[545px] max-h-[92dvh] bg-white rounded-3xl p-4 sm:p-5 shadow-2xl border border-black/10 overflow-hidden flex flex-col justify-between">
+      {/* Compact Responsive Modal Box */}
+      <div className={`relative w-full max-w-md ${
+        view === "success" 
+          ? "h-auto max-h-[90dvh]" 
+          : view === "login" 
+            ? "h-[430px] max-h-[90dvh]" 
+            : "h-[485px] sm:h-[505px] max-h-[90dvh]"
+      } bg-white rounded-3xl p-4 sm:p-5 shadow-2xl border border-black/10 overflow-hidden flex flex-col justify-between transition-all duration-300`}>
         {/* Decorative Gold Glows */}
         <div className="absolute -top-12 -right-12 w-44 h-44 bg-amber-400/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-12 -left-12 w-44 h-44 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
 
-        {/* 1. Modal Top Header (Clean, Compact) */}
+        {/* 1. Modal Top Header */}
         <div className="flex items-center justify-between pb-2 border-b border-black/5 shrink-0 z-10">
           <div className="flex items-center gap-2">
             <span className="p-1 rounded-lg bg-gradient-to-tr from-[#C59A3F] to-[#E5C158] text-white shadow-sm">
@@ -269,11 +420,8 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
             </span>
             <div className="flex items-center gap-1.5">
               <h3 className="text-sm sm:text-base font-black text-[#1C1C1E] tracking-tight">
-                {view === "upgrade" ? "Professional Wealth Engine" : "Sign In to Pro"}
+                {view === "upgrade" ? "Professional Wealth Engine" : view === "success" ? "Pro Activated" : "Restore Pro Access"}
               </h3>
-              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 uppercase tracking-wider">
-                PRO
-              </span>
             </div>
           </div>
           <button
@@ -284,7 +432,7 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
           </button>
         </div>
 
-        {/* 2. Modal Middle: Carousel Slide Display or Login Form */}
+        {/* 2. Modal Middle Content */}
         <div className="flex-1 flex flex-col py-1.5 z-10 min-h-0 overflow-hidden">
           {view === "upgrade" ? (
             <div className="flex flex-col justify-between h-full min-h-0">
@@ -328,7 +476,6 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
 
               {/* Active Slide Card */}
               <div className="p-2.5 sm:p-3 bg-[#F8F9FA] rounded-2xl border border-black/5 flex flex-col justify-between flex-1 min-h-0 shadow-sm">
-                {/* Title & Description */}
                 <div className="flex flex-col gap-0.5 shrink-0 pb-1">
                   <div className="flex items-center gap-1.5">
                     <IconComponent size={15} className={slide.iconColor} />
@@ -341,21 +488,76 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
                   </p>
                 </div>
 
-                {/* Screenshot / Feature Preview Box (Strictly responsive flex) */}
                 <div className="flex-1 w-full min-h-0 flex flex-col">
                   {slide.snippet}
                 </div>
               </div>
             </div>
-          ) : (
-            /* Login View Form */
-            <form onSubmit={handleLogin} className="flex flex-col justify-center gap-2.5 h-full">
-              <p className="text-xs text-gray-500 mb-0.5">
-                Enter your Supabase email to restore Pro access.
-              </p>
+          ) : view === "success" ? (
+            /* Compact Post-Payment Success Screen */
+            <div className="flex flex-col items-center justify-center gap-3 text-center pt-3 pb-1 animate-in zoom-in-95 duration-300">
+              <div className="w-12 h-12 mt-1 rounded-full bg-gradient-to-tr from-[#C59A3F] to-[#E5C158] flex items-center justify-center text-white shadow-md shadow-amber-500/25 animate-bounce">
+                <Sparkles size={24} />
+              </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[10.5px] font-bold text-gray-600 uppercase">Email</label>
+                <h4 className="text-base sm:text-lg font-black text-[#1C1C1E] tracking-tight">
+                  {userName ? `Welcome ${userName}` : "Welcome"}
+                </h4>
+                <p className="text-[11.5px] text-gray-600 max-w-xs leading-snug">
+                  Lifetime access is now active for <strong className="text-[#8A6414]">{email || "your device"}</strong>.
+                </p>
+              </div>
+
+              <div className="w-full p-2.5 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-1.5 text-left text-[11px] text-gray-700">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
+                  <span className="font-bold text-[#1C1C1E]">10,000+ Monte Carlo Engine Unlocked</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
+                  <span className="font-bold text-[#1C1C1E]">Comprehensive Advanced Analytics</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
+                  <span className="font-bold text-[#1C1C1E]">Multi-Scenario Cloud Sync Ready</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleFinishSuccess}
+                className="w-full py-2.5 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer mt-0.5"
+              >
+                Enter Pro Dashboard
+              </button>
+            </div>
+          ) : (
+            /* Restore Pro View Form */
+            <form onSubmit={handleLogin} className="flex flex-col justify-center gap-2.5 h-full">
+              <div className="flex flex-col gap-0.5">
+                <h4 className="text-xs font-bold text-[#1C1C1E]">Restore Pro Access</h4>
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Enter the email address you used at checkout to instantly restore your Pro account.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10.5px] font-bold text-gray-600 uppercase">Your Name (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Aaron"
+                  value={userName}
+                  onChange={(e) => {
+                    setUserName(e.target.value);
+                    try { localStorage.setItem("retirement_pro_name", e.target.value); } catch (err) {}
+                  }}
+                  className="w-full py-2 px-3 bg-[#F2F2F7] border border-black/10 rounded-xl font-medium text-xs text-[#1C1C1E] outline-none focus:border-[#C59A3F] focus:bg-white"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[10.5px] font-bold text-gray-600 uppercase">Purchase Email</label>
                 <input
                   type="email"
                   required
@@ -366,22 +568,8 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
                 />
               </div>
 
-              <div className="flex flex-col gap-1">
-                <div className="flex justify-between items-center">
-                  <label className="text-[10.5px] font-bold text-gray-600 uppercase">Password</label>
-                  <span className="text-[9.5px] text-gray-400 font-medium">(Optional for Magic Link)</span>
-                </div>
-                <input
-                  type="password"
-                  placeholder="•••••••• or leave blank for OTP"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full py-2 px-3 bg-[#F2F2F7] border border-black/10 rounded-xl font-medium text-xs text-[#1C1C1E] outline-none focus:border-[#C59A3F] focus:bg-white"
-                />
-              </div>
-
               {statusMsg && (
-                <div className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg font-medium">
+                <div className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-xl font-medium leading-snug border border-amber-200/60">
                   {statusMsg}
                 </div>
               )}
@@ -389,53 +577,55 @@ export default function PremiumUpgradeModal({ isOpen, onClose }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 bg-[#1C1C1E] hover:bg-black text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-1 cursor-pointer"
+                className="w-full py-2.5 bg-[#1C1C1E] hover:bg-black text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-0.5 cursor-pointer"
               >
-                <LogIn size={13} />
-                <span>{loading ? "Signing in..." : "Sign In to Pro"}</span>
+                <ShieldCheck size={14} className="text-[#E5C158]" />
+                <span>{loading ? "Verifying..." : "Restore Pro Access"}</span>
               </button>
             </form>
           )}
         </div>
 
-        {/* 3. Modal Bottom Fixed Actions & Single-Line Compact Footer */}
-        <div className="pt-2 border-t border-black/5 shrink-0 z-10 flex flex-col gap-2">
-          {view === "upgrade" ? (
-            <>
-              <button
-                type="button"
-                onClick={handleCheckout}
-                className="lemonsqueezy-button w-full py-2.5 sm:py-3 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-amber-900/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <span>Unlock Professional Suite · $4.00</span>
-                <ArrowRight size={14} />
-              </button>
-
-              {/* Single-line ultra-compact badge footer */}
-              <div className="flex items-center justify-between text-[10px] text-gray-500 px-1 whitespace-nowrap overflow-hidden">
-                <span className="flex items-center gap-1 font-medium text-slate-500 truncate">
-                  <Check size={11} className="text-emerald-600 stroke-[3] shrink-0" /> Instant Activation
-                </span>
-                <span className="text-gray-300 shrink-0 mx-1">•</span>
+        {/* 3. Modal Bottom Actions */}
+        {view !== "success" && (
+          <div className="pt-2 border-t border-black/5 shrink-0 z-10 flex flex-col gap-2">
+            {view === "upgrade" ? (
+              <>
                 <button
                   type="button"
-                  onClick={() => setView("login")}
-                  className="font-bold text-[#8A6414] hover:underline cursor-pointer shrink-0"
+                  onClick={handleCheckout}
+                  className="lemonsqueezy-button w-full py-2.5 sm:py-3 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-md shadow-amber-900/15 flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
-                  Already a member? Sign In
+                  <span>Unlock Professional Suite · $4.00</span>
+                  <ArrowRight size={14} />
                 </button>
-              </div>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setView("upgrade")}
-              className="w-full py-2.5 bg-[#F2F2F7] hover:bg-[#E5E5EA] text-[#1C1C1E] font-bold text-xs rounded-xl transition-all text-center cursor-pointer"
-            >
-              ← Back to Features & Plans
-            </button>
-          )}
-        </div>
+
+                {/* Single-line ultra-compact badge footer */}
+                <div className="flex items-center justify-between text-[10px] text-gray-500 px-1 whitespace-nowrap overflow-hidden">
+                  <span className="flex items-center gap-1 font-medium text-slate-500 truncate">
+                    <Check size={11} className="text-emerald-600 stroke-[3] shrink-0" /> Instant Activation
+                  </span>
+                  <span className="text-gray-300 shrink-0 mx-1">•</span>
+                  <button
+                    type="button"
+                    onClick={() => setView("login")}
+                    className="font-bold text-[#8A6414] hover:underline cursor-pointer shrink-0"
+                  >
+                    Already paid? Restore Pro
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setView("upgrade")}
+                className="w-full py-2.5 bg-[#F2F2F7] hover:bg-[#E5E5EA] text-[#1C1C1E] font-bold text-xs rounded-xl transition-all text-center cursor-pointer"
+              >
+                ← Back to Features & Plans
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

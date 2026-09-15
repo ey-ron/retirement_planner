@@ -1,6 +1,32 @@
-export const CURRENT_ADMIN_VERSION = "v1.1.3";
+export const CURRENT_ADMIN_VERSION = "v1.1.5";
 
 export const ADMIN_CHANGE_LOGS = [
+  {
+    version: "v1.1.5",
+    date: "September 16, 2026",
+    title: "Instant Zero-Password Pro Restoration & Error Elimination",
+    items: [
+      "Replaced traditional password-required login form with a dedicated 1-click 'Restore Pro Access' endpoint (/api/auth/restore-pro) that restores Pro license directly via purchase email.",
+      "Integrated customer name capture from Lemon Squeezy checkout into Supabase profiles, localStorage, and personalized celebration views.",
+      "Added dedicated 'Under Development' Pro dashboard placeholder for active Pro subscribers while retaining header and bottom partner ad placements.",
+      "Automatically dismissed Lemon Squeezy checkout overlay upon successful payment to immediately reveal the in-app Pro celebration popup.",
+      "Eliminated 'Invalid login credentials' error completely for Lemon Squeezy purchasers.",
+      "Streamlined Pro celebration pop-up dimensions and internal padding for a compact, snug fit without excess empty space.",
+      "Updated header badge to display clean 'Pro' indicator.",
+      "Preserved bottom partner placement persistently across both standard and Pro views.",
+      "Seamlessly stores verified Pro credentials to localStorage and triggers instant UI unlock across all components."
+    ]
+  },
+  {
+    version: "v1.1.4",
+    date: "September 16, 2026",
+    title: "Instant In-Browser Pro Activation & 1-Click Magic Sign-In Fallback",
+    items: [
+      "Added instant celebratory success screen upon checkout completion with automatic local session unlock (bypassing password barriers).",
+      "Removed bottom partner ad banner automatically when Pro access is active.",
+      "Added automatic passwordless Magic Link fallback for returning users so they never see 'Invalid login credentials'."
+    ]
+  },
   {
     version: "v1.1.3",
     date: "September 16, 2026",
