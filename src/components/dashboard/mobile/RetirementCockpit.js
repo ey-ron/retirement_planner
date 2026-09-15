@@ -979,29 +979,20 @@ export default function RetirementCockpit({
             10,000+ Market Simulations
           </span>
           <span className="text-[9.5px] font-semibold text-gray-400">
-            Available in Premium
+            Available in Pro
           </span>
         </div>
       </div>
 
-      {/* 4. Premium Button & Reset */}
-      <div className="flex gap-2 shrink-0 h-12 sm:h-13">
+      {/* 4. Primary Action: Recalculate / Edit Parameters */}
+      <div className="shrink-0 h-12 sm:h-13">
         <button
           type="button"
-          onClick={() => { }}
-          className="flex-1 h-full px-4 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black uppercase tracking-wider text-xs rounded-xl sm:rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+          onClick={() => setIsEnteringSteps(true)}
+          className="w-full h-full px-4 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black uppercase tracking-wider text-xs rounded-xl sm:rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
-          <Sparkles size={16} />
-          <span>Premium</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={onResetInfo}
-          className="w-12 sm:w-13 h-full bg-white hover:bg-black/5 border border-black/10 rounded-xl sm:rounded-2xl text-gray-500 hover:text-[#1C1C1E] transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
-          title="Reset to initial card"
-        >
-          <RefreshCw size={16} />
+          <Sliders size={15} />
+          <span>Edit Plan Parameters</span>
         </button>
       </div>
     </div>
