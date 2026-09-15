@@ -241,22 +241,106 @@ export default function RetirementCockpit({
     };
   }, [activeAge, initialRetireAge, initialLifeExpectancy, initialMonthlyExpense, initialCurrentNestEgg, initialMonthlyInvestment, initialCagr, initialInflation]);
 
-  const chartPath = useMemo(() => {
-    if (!sim.trajectoryPoints.length) return "";
+  const { chartPath, chartAreaPath, milestones, zeroDepletionAge, zeroDepletionPct } = useMemo(() => {
+    if (!sim.trajectoryPoints.length) return { chartPath: "", chartAreaPath: "", milestones: [], zeroDepletionAge: null, zeroDepletionPct: null };
     const width = 340;
     const height = 110;
-    const padding = 10;
-    const availableWidth = width - padding * 2;
-    const availableHeight = height - padding * 2;
+    const paddingX = 8;
+    const paddingTop = 12;
+    const paddingBottom = 12;
+    const availableWidth = width - paddingX * 2;
+    const availableHeight = height - paddingTop - paddingBottom;
 
+    // Highest point in this person's trajectory
+    const peakTrajectoryBalance = Math.max(...sim.trajectoryPoints.map(p => p.balance), 1);
+    
+    // Scale purely against the trajectory peak so the apex dynamically reaches 80-85% of the canvas height
+    // This ensures a bold, dramatic curve regardless of shortfall vs target
     const points = sim.trajectoryPoints.map((p, index) => {
-      const x = padding + (index / (sim.trajectoryPoints.length - 1)) * availableWidth;
-      const y = height - padding - (p.balance / sim.maxBalance) * availableHeight;
+      const x = paddingX + (index / (sim.trajectoryPoints.length - 1)) * availableWidth;
+      const normalizedRatio = Math.max(0, p.balance / peakTrajectoryBalance);
+      // Apex reaches near the top of the available chart space (~82% height)
+      const y = height - paddingBottom - (normalizedRatio * availableHeight * 0.88);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     });
 
-    return `M ${points.join(" L ")}`;
-  }, [sim.trajectoryPoints, sim.maxBalance]);
+    const pathString = `M ${points.join(" L ")}`;
+    
+    // Closed area for subtle golden gradient beneath the curve
+    const firstX = points[0].split(",")[0];
+    const lastX = points[points.length - 1].split(",")[0];
+    const baselineY = (height - paddingBottom).toFixed(1);
+    const areaString = `${pathString} L ${lastX},${baselineY} L ${firstX},${baselineY} Z`;
+
+    // Calculate prominent milestone ages for the bottom axis
+    const totalSpan = Math.max(1, initialLifeExpectancy - activeAge);
+    const milestones = [];
+    
+    // Start age (Current Age)
+    milestones.push({ 
+      age: activeAge, 
+      label: `${activeAge}`, 
+      isKey: false,
+      pct: 0 
+    });
+
+    // Intermediate accumulation milestone if gap is at least 12 years
+    if (initialRetireAge - activeAge >= 12) {
+      const midAccumAge = Math.round(activeAge + (initialRetireAge - activeAge) / 2);
+      milestones.push({ 
+        age: midAccumAge, 
+        label: `${midAccumAge}`, 
+        isKey: false,
+        pct: ((midAccumAge - activeAge) / totalSpan) * 100 
+      });
+    }
+
+    // Key milestone: Retirement Age (parenthesis only, no 'Retire' word)
+    milestones.push({ 
+      age: initialRetireAge, 
+      label: `(${initialRetireAge})`, 
+      isKey: true,
+      pct: ((initialRetireAge - activeAge) / totalSpan) * 100 
+    });
+
+    // Check if portfolio runs down to zero after retirement
+    const zeroDepletionPoint = sim.trajectoryPoints.find(p => p.age > initialRetireAge && p.balance <= 0);
+
+    if (zeroDepletionPoint && zeroDepletionPoint.age < initialLifeExpectancy) {
+      // Add red depletion age milestone where balance hits 0
+      milestones.push({
+        age: zeroDepletionPoint.age,
+        label: `${zeroDepletionPoint.age}`,
+        isZero: true,
+        pct: ((zeroDepletionPoint.age - activeAge) / totalSpan) * 100
+      });
+    } else if (initialLifeExpectancy - initialRetireAge >= 16) {
+      // Intermediate distribution milestone if horizon after retirement is at least 16 years and doesn't deplete early
+      const midDistAge = Math.round(initialRetireAge + (initialLifeExpectancy - initialRetireAge) / 2);
+      milestones.push({ 
+        age: midDistAge, 
+        label: `${midDistAge}`, 
+        isKey: false,
+        pct: ((midDistAge - activeAge) / totalSpan) * 100 
+      });
+    }
+
+    // End milestone: Life Horizon
+    milestones.push({ 
+      age: initialLifeExpectancy, 
+      label: `${initialLifeExpectancy}`, 
+      isKey: false,
+      pct: 100 
+    });
+
+    return { 
+      chartPath: pathString, 
+      chartAreaPath: areaString,
+      milestones,
+      zeroDepletionAge: zeroDepletionPoint ? zeroDepletionPoint.age : null,
+      zeroDepletionPct: zeroDepletionPoint ? ((zeroDepletionPoint.age - activeAge) / totalSpan) * 100 : null
+    };
+  }, [sim.trajectoryPoints, activeAge, initialRetireAge, initialLifeExpectancy]);
 
   // UNENTERED VIEW OR DIRECT INLINE STEPS INSIDE THE RETIREMENT TRAJECTORY CARD
   // The card height is locked using flex-1 with balanced spacing, matching the exact height of the initial card.
@@ -721,66 +805,62 @@ export default function RetirementCockpit({
     <div className="w-full h-full flex-1 flex flex-col gap-[6px] overflow-hidden text-[#1C1C1E] animate-in fade-in duration-300">
       {/* 1. Full Hero Card (Corpus Goal Section - comfortably sized) */}
       <div 
-        className="w-full shrink-0 relative text-white rounded-2xl py-3 px-3.5 sm:px-4 overflow-hidden shadow-md flex justify-between items-center z-20 select-none border border-black/5"
+        onClick={() => setIsEnteringSteps(true)}
+        className="w-full shrink-0 relative text-white rounded-2xl py-2.5 px-3.5 sm:px-4 overflow-hidden shadow-md flex flex-col justify-between z-20 select-none border border-black/5 cursor-pointer active:scale-[0.99] transition-all"
         style={{
           background: 'linear-gradient(135deg, #C59A3F 0%, #3E2B00 100%)'
         }}
+        title="Tap to edit retirement assumptions"
       >
         {/* Ambient subtle light glow */}
         <div className="absolute top-0 right-0 w-36 h-36 bg-white/15 rounded-full blur-[35px] pointer-events-none" />
 
-        {/* Left: Retire Year & Retire Age */}
-        <div 
-          onClick={() => setIsEnteringSteps(true)}
-          className="flex flex-col items-start justify-center w-[28%] relative z-10 cursor-pointer active:scale-95 transition-all group"
-          title="Tap to adjust Retire Age"
-        >
-          <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/60 leading-tight group-hover:text-white/90">
-            Retire Year
-          </span>
-          <span className="text-[16px] sm:text-[17px] font-black leading-tight text-white mt-0.5">
-            {retireYear}
-          </span>
-          <div className="mt-1.5 flex flex-col items-start">
-            <span className="text-[8px] font-black uppercase tracking-[0.18em] text-white/60 leading-tight group-hover:text-white/90">
-              Retire Age
+        {/* Top Header: Retire Year & Age */}
+        <div className="flex items-center justify-between relative z-10 pb-1.5 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <span className="text-[8.5px] font-black uppercase tracking-[0.18em] text-white/65">
+              Retire Year
             </span>
-            <span className="text-[13px] sm:text-[14px] font-black leading-tight text-white mt-0.5">
+            <span className="text-[13px] font-black text-white leading-none">
+              {retireYear}
+            </span>
+            <span className="text-white/40 text-[10px]">•</span>
+            <span className="text-[8.5px] font-black uppercase tracking-[0.18em] text-white/65">
+              Age
+            </span>
+            <span className="text-[13px] font-black text-white leading-none">
               {initialRetireAge}
             </span>
           </div>
-        </div>
 
-        {/* Center: Retire Corpus */}
-        <div 
-          onClick={() => setIsEnteringSteps(true)}
-          className="flex flex-col items-center justify-center flex-1 relative z-10 cursor-pointer active:scale-95 transition-transform"
-        >
-          <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/70 leading-tight">
-            Retire Corpus
-          </span>
-          <div className="text-[22px] sm:text-[25px] font-black tracking-tight leading-none text-white mt-0.5">
-            ${Math.round(sim.requiredCorpus).toLocaleString()}
+          <div className="flex items-center gap-1">
+            <span className={`text-[11px] font-black leading-none px-1.5 py-0.5 rounded ${sim.isOnTrack ? 'bg-[#85E394]/20 text-[#85E394]' : 'bg-orange-400/20 text-orange-200'}`}>
+              {sim.fundedPct.toFixed(0)}% Funded
+            </span>
           </div>
         </div>
 
-        {/* Right: Projected Nest Egg */}
-        <div 
-          onClick={() => setIsEnteringSteps(true)}
-          className="flex flex-col items-end justify-center w-[28%] relative z-10 cursor-pointer active:scale-95 transition-all group"
-        >
-          <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/60 leading-tight group-hover:text-white/90">
-            Projected
-          </span>
-          <span className="text-[16px] sm:text-[17px] font-black leading-tight text-white mt-0.5">
-            ${Math.round(sim.projectedNestEgg).toLocaleString()}
-          </span>
-          <div className="mt-1.5 flex flex-col items-end">
-            <span className="text-[8px] font-black uppercase tracking-[0.18em] text-white/60 leading-tight group-hover:text-white/90">
-              Coverage
+        {/* Comparison Rows: Labels on Left, Amounts on Right */}
+        <div className="flex flex-col gap-1.5 pt-2 relative z-10">
+          {/* Row 1: Target Corpus */}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/75">
+              Target Corpus
             </span>
-            <span className={`text-[13px] sm:text-[14px] font-black leading-tight mt-0.5 ${sim.isOnTrack ? 'text-[#85E394]' : 'text-orange-300'}`}>
-              {sim.fundedPct.toFixed(0)}%
+            <span className="text-[17px] sm:text-[19px] font-black tracking-tight text-white leading-none flex items-baseline">
+              <span className="text-[11px] sm:text-[12px] font-bold text-white/80 relative -top-[4px] mr-0.5">$</span>
+              <span>{Math.round(sim.requiredCorpus).toLocaleString()}</span>
+            </span>
+          </div>
+
+          {/* Row 2: Projected Savings */}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/75">
+              Projected Savings
+            </span>
+            <span className={`text-[17px] sm:text-[19px] font-black tracking-tight leading-none flex items-baseline ${sim.isOnTrack ? 'text-[#85E394]' : 'text-orange-200'}`}>
+              <span className={`text-[11px] sm:text-[12px] font-bold relative -top-[4px] mr-0.5 ${sim.isOnTrack ? 'text-[#85E394]/80' : 'text-orange-200/80'}`}>$</span>
+              <span>{Math.round(sim.projectedNestEgg).toLocaleString()}</span>
             </span>
           </div>
         </div>
@@ -798,12 +878,29 @@ export default function RetirementCockpit({
         </div>
 
         <div className="w-full flex-1 min-h-0 relative bg-[#F9F9FB] rounded-xl border border-black/5 overflow-hidden flex items-center justify-center">
-          <svg className="w-full h-full p-2" viewBox="0 0 340 110" preserveAspectRatio="none">
+          <svg className="w-full h-full p-1 pb-0.5" viewBox="0 0 340 110" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="trajectoryGlow" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#C59A3F" stopOpacity="0.28" />
+                <stop offset="60%" stopColor="#C59A3F" stopOpacity="0.08" />
+                <stop offset="100%" stopColor="#C59A3F" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+
+            {/* Gradient area beneath the curve */}
+            {chartAreaPath && (
+              <path
+                d={chartAreaPath}
+                fill="url(#trajectoryGlow)"
+              />
+            )}
+
+            {/* Main trajectory stroke */}
             <path
               d={chartPath}
               fill="none"
               stroke="#C59A3F"
-              strokeWidth="2.5"
+              strokeWidth="2.75"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -819,65 +916,87 @@ export default function RetirementCockpit({
               Retire
             </span>
           </div>
+
+          {/* Red depletion indicator if balance hits $0 before life horizon */}
+          {zeroDepletionPct !== null && (
+            <div 
+              className="absolute top-1 bottom-1 w-0.5 border-r border-dashed border-red-500/50 flex items-center justify-center"
+              style={{
+                left: `${Math.max(5, Math.min(95, zeroDepletionPct))}%`
+              }}
+            >
+              <span className="absolute -top-0.5 bg-red-600 text-[7px] font-black text-white px-1 rounded-sm shadow-sm">
+                $0
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Age Timeline Axis showing key milestone ages */}
+        <div className="w-full relative h-3.5 px-2 mt-0.5 shrink-0 flex items-center select-none">
+          {milestones && milestones.map((m, idx) => (
+            <div
+              key={idx}
+              className="absolute -translate-x-1/2 flex flex-col items-center"
+              style={{
+                left: `${m.pct === 0 ? 3 : m.pct === 100 ? 97 : m.pct}%`
+              }}
+            >
+              <span className={`text-[8.5px] sm:text-[9px] leading-none whitespace-nowrap font-bold ${
+                m.isZero
+                  ? 'text-red-600 font-black'
+                  : m.isKey 
+                    ? 'text-[#8A6414] font-black' 
+                    : 'text-gray-400'
+              }`}>
+                {m.label}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* 3. Quick Control Sliders (fits content nicely with comfortable breathing room) */}
-      <div className="w-full shrink-0 bg-white pt-4 px-4 pb-[18px] rounded-2xl border border-black/10 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col gap-3">
-        <div className="flex items-center gap-1.5">
-          <Sliders size={14} className="text-[#8A6414]" />
-          <span className="text-[11px] font-black uppercase tracking-wider text-[#1C1C1E]">
-            Quick Adjustments
+      {/* 3. Risk Warning & Realism Teaser Card */}
+      <div className="w-full flex-1 min-h-0 bg-white p-3 sm:p-3.5 rounded-2xl border border-black/10 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between overflow-hidden">
+        <div className="flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200/80 text-[9.5px] font-black tracking-wider uppercase text-amber-700">
+              RISK WARNING
+            </span>
+          </div>
+          <span className="text-[10px] font-bold text-gray-400">
+            Linear vs. Reality
           </span>
         </div>
 
-        {/* Sliders Container with extra breathing distance between the 2 sliders */}
-        <div className="flex flex-col gap-3">
-          {/* Monthly Expense Slider */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex justify-between items-center text-[11px]">
-              <span className="text-gray-500 font-semibold">Current Monthly Spend:</span>
-              <span className="font-black text-[#1C1C1E]">${initialMonthlyExpense.toLocaleString()}</span>
-            </div>
-            <input
-              type="range"
-              min="1000"
-              max="15000"
-              step="100"
-              value={initialMonthlyExpense}
-              onChange={e => onUpdateParam("monthlyExpense", parseInt(e.target.value, 10))}
-              className="w-full accent-[#C59A3F] cursor-pointer h-2 bg-gray-200 rounded-lg"
-            />
-          </div>
+        <div className="my-auto flex flex-col gap-1 sm:gap-1.5">
+          <h4 className="text-[13px] sm:text-[14px] font-black text-[#1C1C1E] tracking-tight leading-tight">
+            Markets don't move in a straight line.
+          </h4>
+          <p className="text-[10.5px] sm:text-[11px] text-gray-600 leading-snug">
+            A linear {initialCagr}% return looks safe on paper—until an early bear market cuts your retirement years in half. Unlock Monte Carlo stress-testing to see how your nest egg survives actual market downturns.
+          </p>
+        </div>
 
-          {/* Monthly Savings Contribution Slider */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex justify-between items-center text-[11px]">
-              <span className="text-gray-500 font-semibold">Monthly Savings:</span>
-              <span className="font-black text-[#2E7D32]">${initialMonthlyInvestment.toLocaleString()}</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="5000"
-              step="50"
-              value={initialMonthlyInvestment}
-              onChange={e => onUpdateParam("monthlyInvestment", parseInt(e.target.value, 10))}
-              className="w-full accent-[#2E7D32] cursor-pointer h-2 bg-gray-200 rounded-lg"
-            />
-          </div>
+        <div className="pt-1 border-t border-black/5 flex items-center justify-between shrink-0">
+          <span className="text-[9.5px] font-bold text-[#8A6414]">
+            1,000+ Market Simulations
+          </span>
+          <span className="text-[9.5px] font-semibold text-gray-400">
+            Available in Premium
+          </span>
         </div>
       </div>
 
-      {/* 4. Re-Configure Button & Reset */}
+      {/* 4. Premium Button & Reset */}
       <div className="flex gap-2 shrink-0 h-12 sm:h-13">
         <button
           type="button"
-          onClick={() => setIsEnteringSteps(true)}
+          onClick={() => {}}
           className="flex-1 h-full px-4 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black uppercase tracking-wider text-xs rounded-xl sm:rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
           <Sparkles size={16} />
-          <span>Edit Information</span>
+          <span>Premium</span>
         </button>
 
         <button
