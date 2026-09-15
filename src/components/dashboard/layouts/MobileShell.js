@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import RetirementCockpit from "../mobile/RetirementCockpit";
 import PartnerAdBanner from "../PartnerAdBanner";
 import PremiumUpgradeModal from "../PremiumUpgradeModal";
@@ -13,6 +13,53 @@ export default function MobileShell({
   onResetInfo
 }) {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  // Detect mobile virtual keyboard via visualViewport resize or input focus
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleFocusIn = (e) => {
+      const tag = e.target?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") {
+        setIsKeyboardOpen(true);
+      }
+    };
+
+    const handleFocusOut = () => {
+      // Small timeout to avoid rapid flash when switching between inputs
+      setTimeout(() => {
+        const activeTag = document.activeElement?.tagName?.toLowerCase();
+        if (activeTag !== "input" && activeTag !== "textarea" && activeTag !== "select") {
+          setIsKeyboardOpen(false);
+        }
+      }, 150);
+    };
+
+    // Modern mobile visual viewport tracking
+    let initialHeight = window.visualViewport?.height || window.innerHeight;
+    const handleViewportResize = () => {
+      if (window.visualViewport) {
+        // If viewport shrinks by more than 120px, the soft keyboard is open
+        const isShrunk = initialHeight - window.visualViewport.height > 120;
+        setIsKeyboardOpen(isShrunk);
+      }
+    };
+
+    window.addEventListener("focusin", handleFocusIn);
+    window.addEventListener("focusout", handleFocusOut);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", handleViewportResize);
+    }
+
+    return () => {
+      window.removeEventListener("focusin", handleFocusIn);
+      window.removeEventListener("focusout", handleFocusOut);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", handleViewportResize);
+      }
+    };
+  }, []);
 
   return (
     <div className="w-full h-[100dvh] max-h-[100dvh] bg-[#F2F2F7] text-[#1C1C1E] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)]">
@@ -59,12 +106,14 @@ export default function MobileShell({
         onClose={() => setIsUpgradeModalOpen(false)}
       />
 
-      {/* 50px Height Bottom Partner Placement */}
-      <div className="w-full shrink-0 z-40 bg-white/95 backdrop-blur-md border-t border-black/8 px-4 py-2 flex items-center justify-center shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
-        <div className="w-full max-w-2xl mx-auto flex items-center justify-center">
-          <PartnerAdBanner referralUrl="https://ibkr.com/referral/aaron6369" />
+      {/* 50px Height Bottom Partner Placement (auto-hidden when mobile keyboard is open) */}
+      {!isKeyboardOpen && (
+        <div className="w-full shrink-0 z-40 bg-white/95 backdrop-blur-md border-t border-black/8 px-4 py-2 flex items-center justify-center shadow-[0_-4px_16px_rgba(0,0,0,0.04)] animate-in fade-in duration-150">
+          <div className="w-full max-w-2xl mx-auto flex items-center justify-center">
+            <PartnerAdBanner referralUrl="https://ibkr.com/referral/aaron6369" />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

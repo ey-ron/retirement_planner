@@ -241,22 +241,66 @@ export default function RetirementCockpit({
     };
   }, [activeAge, initialRetireAge, initialLifeExpectancy, initialMonthlyExpense, initialCurrentNestEgg, initialMonthlyInvestment, initialCagr, initialInflation]);
 
-  const { chartPath, chartAreaPath, milestones, zeroDepletionAge, zeroDepletionPct } = useMemo(() => {
-    if (!sim.trajectoryPoints.length) return { chartPath: "", chartAreaPath: "", milestones: [], zeroDepletionAge: null, zeroDepletionPct: null };
-    const width = 340;
-    const height = 110;
-    const paddingX = 8;
-    const paddingTop = 12;
-    const paddingBottom = 12;
-    const availableWidth = width - paddingX * 2;
+  const { chartPath, chartAreaPath, milestones, zeroDepletionAge, zeroDepletionPct, retirePct } = useMemo(() => {
+    if (!sim.trajectoryPoints.length) return { chartPath: "", chartAreaPath: "", milestones: [], zeroDepletionAge: null, zeroDepletionPct: null, retirePct: null };
+    const width = 1000;
+    const height = 300;
+    const paddingTop = 30;
+    const paddingBottom = 30;
     const availableHeight = height - paddingTop - paddingBottom;
+
+    const totalSpan = Math.max(1, initialLifeExpectancy - activeAge);
+    const zeroDepletionPoint = sim.trajectoryPoints.find(p => p.age > initialRetireAge && p.balance <= 0);
+
+    // Natural linear positions
+    const naturalRetirePct = ((initialRetireAge - activeAge) / totalSpan) * 100;
+    const naturalZeroPct = zeroDepletionPoint ? ((zeroDepletionPoint.age - activeAge) / totalSpan) * 100 : null;
+
+    // Guaranteed minimum visual distance between retirement apex and $0 depletion
+    const MIN_DISTANCE_PCT = 16;
+    let targetRetirePct = naturalRetirePct;
+    let targetZeroPct = naturalZeroPct;
+
+    if (zeroDepletionPoint && naturalZeroPct !== null) {
+      const rawDistance = naturalZeroPct - naturalRetirePct;
+      if (rawDistance < MIN_DISTANCE_PCT) {
+        // Enforce guaranteed separation: adjust visual X positions smoothly
+        targetRetirePct = Math.max(8, naturalRetirePct - 6);
+        targetZeroPct = Math.min(92, targetRetirePct + MIN_DISTANCE_PCT);
+      }
+    }
+
+    // Function to map any age to its distorted, visually spaced X percentage
+    const getMappedXPercent = (age) => {
+      if (age <= activeAge) return 0;
+      if (age >= initialLifeExpectancy) return 100;
+
+      if (zeroDepletionPoint && naturalZeroPct !== null && targetZeroPct !== null) {
+        if (age <= initialRetireAge) {
+          // Accumulation segment: 0% -> targetRetirePct
+          const progress = (age - activeAge) / Math.max(1, initialRetireAge - activeAge);
+          return progress * targetRetirePct;
+        } else if (age <= zeroDepletionPoint.age) {
+          // Depletion segment: targetRetirePct -> targetZeroPct (stretched for readability)
+          const progress = (age - initialRetireAge) / Math.max(1, zeroDepletionPoint.age - initialRetireAge);
+          return targetRetirePct + progress * (targetZeroPct - targetRetirePct);
+        } else {
+          // Post-depletion segment: targetZeroPct -> 100%
+          const progress = (age - zeroDepletionPoint.age) / Math.max(1, initialLifeExpectancy - zeroDepletionPoint.age);
+          return targetZeroPct + progress * (100 - targetZeroPct);
+        }
+      } else {
+        // Standard mapping when no early depletion
+        return ((age - activeAge) / totalSpan) * 100;
+      }
+    };
 
     // Highest point in this person's trajectory
     const peakTrajectoryBalance = Math.max(...sim.trajectoryPoints.map(p => p.balance), 1);
 
-    // Scale purely against the trajectory peak so the apex reaches 50% of the canvas height
-    const points = sim.trajectoryPoints.map((p, index) => {
-      const x = paddingX + (index / (sim.trajectoryPoints.length - 1)) * availableWidth;
+    // Map each point's X to the curve using the adjusted spacing!
+    const points = sim.trajectoryPoints.map((p) => {
+      const x = (getMappedXPercent(p.age) / 100) * width;
       const normalizedRatio = Math.max(0, p.balance / peakTrajectoryBalance);
       // Apex reaches exactly 50% of the available chart height
       const y = height - paddingBottom - (normalizedRatio * availableHeight * 0.50);
@@ -271,73 +315,67 @@ export default function RetirementCockpit({
     const baselineY = (height - paddingBottom).toFixed(1);
     const areaString = `${pathString} L ${lastX},${baselineY} L ${firstX},${baselineY} Z`;
 
-    // Calculate prominent milestone ages for the bottom axis
-    const totalSpan = Math.max(1, initialLifeExpectancy - activeAge);
-    const milestones = [];
+    // Build timeline milestone numbers using identical mapped positions
+    const timelineItems = [
+      { age: activeAge, label: `${activeAge}`, isStart: true, pct: 0 }
+    ];
 
-    // Start age (Current Age)
-    milestones.push({
-      age: activeAge,
-      label: `${activeAge}`,
-      isKey: false,
-      pct: 0
-    });
-
-    // Intermediate accumulation milestone if gap is at least 12 years
-    if (initialRetireAge - activeAge >= 12) {
+    // Optional intermediate accumulation (if gap before retirement is wide)
+    if (targetRetirePct >= 32) {
       const midAccumAge = Math.round(activeAge + (initialRetireAge - activeAge) / 2);
-      milestones.push({
+      timelineItems.push({
         age: midAccumAge,
         label: `${midAccumAge}`,
-        isKey: false,
-        pct: ((midAccumAge - activeAge) / totalSpan) * 100
+        pct: getMappedXPercent(midAccumAge)
       });
     }
 
-    // Key milestone: Retirement Age (parenthesis only, no 'Retire' word)
-    milestones.push({
+    // Retirement Milestone
+    timelineItems.push({
       age: initialRetireAge,
       label: `(${initialRetireAge})`,
       isKey: true,
-      pct: ((initialRetireAge - activeAge) / totalSpan) * 100
+      pct: targetRetirePct
     });
 
-    // Check if portfolio runs down to zero after retirement
-    const zeroDepletionPoint = sim.trajectoryPoints.find(p => p.age > initialRetireAge && p.balance <= 0);
-
-    if (zeroDepletionPoint && zeroDepletionPoint.age < initialLifeExpectancy) {
-      // Add red depletion age milestone where balance hits 0
-      milestones.push({
+    // $0 Depletion Milestone
+    if (zeroDepletionPoint && targetZeroPct !== null) {
+      timelineItems.push({
         age: zeroDepletionPoint.age,
         label: `${zeroDepletionPoint.age}`,
         isZero: true,
-        pct: ((zeroDepletionPoint.age - activeAge) / totalSpan) * 100
-      });
-    } else if (initialLifeExpectancy - initialRetireAge >= 16) {
-      // Intermediate distribution milestone if horizon after retirement is at least 16 years and doesn't deplete early
-      const midDistAge = Math.round(initialRetireAge + (initialLifeExpectancy - initialRetireAge) / 2);
-      milestones.push({
-        age: midDistAge,
-        label: `${midDistAge}`,
-        isKey: false,
-        pct: ((midDistAge - activeAge) / totalSpan) * 100
+        pct: targetZeroPct
       });
     }
 
-    // End milestone: Life Horizon
-    milestones.push({
+    // Optional intermediate distribution
+    if (!zeroDepletionPoint && (100 - targetRetirePct) >= 32) {
+      const midDistAge = Math.round(initialRetireAge + (initialLifeExpectancy - initialRetireAge) / 2);
+      timelineItems.push({
+        age: midDistAge,
+        label: `${midDistAge}`,
+        pct: getMappedXPercent(midDistAge)
+      });
+    }
+
+    // End Age
+    timelineItems.push({
       age: initialLifeExpectancy,
       label: `${initialLifeExpectancy}`,
-      isKey: false,
+      isEnd: true,
       pct: 100
     });
+
+    // Sort chronologically
+    timelineItems.sort((a, b) => a.pct - b.pct);
 
     return {
       chartPath: pathString,
       chartAreaPath: areaString,
-      milestones,
+      milestones: timelineItems,
       zeroDepletionAge: zeroDepletionPoint ? zeroDepletionPoint.age : null,
-      zeroDepletionPct: zeroDepletionPoint ? ((zeroDepletionPoint.age - activeAge) / totalSpan) * 100 : null
+      zeroDepletionPct: targetZeroPct,
+      retirePct: targetRetirePct
     };
   }, [sim.trajectoryPoints, activeAge, initialRetireAge, initialLifeExpectancy]);
 
@@ -422,8 +460,8 @@ export default function RetirementCockpit({
                 )}
               </div>
 
-              {/* Step Dynamic Content Area: Generously spaced using flex-1 with prominent typography */}
-              <div className="flex-1 flex flex-col justify-center py-2 sm:py-3 overflow-hidden">
+              {/* Step Dynamic Content Area: Scrollable with auto-focus support so inputs are never hidden behind virtual keyboard */}
+              <div className="flex-1 flex flex-col justify-start sm:justify-center py-2 sm:py-3 overflow-y-auto min-h-0">
                 {/* STEP 1 */}
                 {step === 1 && (
                   <div className="flex flex-col gap-3 sm:gap-4 animate-in fade-in duration-200">
@@ -521,7 +559,12 @@ export default function RetirementCockpit({
                           placeholder="3,000"
                           value={formatNumberWithCommas(formMonthlyExpense)}
                           onChange={e => setFormMonthlyExpense(parseNumberClean(e.target.value))}
-                          className="w-full py-3.5 pl-10 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-base sm:text-lg outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
+                          onFocus={e => {
+                            setTimeout(() => {
+                              e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 120);
+                          }}
+                          className="w-full py-3.5 pl-10 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-lg outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
                         />
                       </div>
                     </div>
@@ -626,6 +669,11 @@ export default function RetirementCockpit({
                             placeholder="20,000"
                             value={formatNumberWithCommas(formCurrentNestEgg)}
                             onChange={e => setFormCurrentNestEgg(parseNumberClean(e.target.value))}
+                            onFocus={e => {
+                              setTimeout(() => {
+                                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }, 120);
+                            }}
                             className="w-full py-3 pl-9 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-base outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
                           />
                         </div>
@@ -643,6 +691,11 @@ export default function RetirementCockpit({
                             placeholder="800"
                             value={formatNumberWithCommas(formMonthlyInvestment)}
                             onChange={e => setFormMonthlyInvestment(parseNumberClean(e.target.value))}
+                            onFocus={e => {
+                              setTimeout(() => {
+                                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }, 120);
+                            }}
                             className="w-full py-3 pl-9 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-base outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
                           />
                         </div>
@@ -875,7 +928,7 @@ export default function RetirementCockpit({
         </div>
 
         <div className="w-full flex-1 min-h-0 relative bg-[#F9F9FB] rounded-xl border border-black/5 overflow-hidden flex items-center justify-center">
-          <svg className="w-full h-full p-1 pb-0.5" viewBox="0 0 340 110" preserveAspectRatio="none">
+          <svg className="w-full h-full" viewBox="0 0 1000 300" preserveAspectRatio="none">
             <defs>
               <linearGradient id="trajectoryGlow" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#C59A3F" stopOpacity="0.28" />
@@ -897,46 +950,59 @@ export default function RetirementCockpit({
               d={chartPath}
               fill="none"
               stroke="#C59A3F"
-              strokeWidth="2.75"
+              strokeWidth="5"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           </svg>
 
-          <div
-            className="absolute top-1 bottom-1 w-0.5 border-r border-dashed border-[#8A6414]/40 flex items-center justify-center"
-            style={{
-              left: `${Math.max(5, Math.min(95, ((initialRetireAge - activeAge) / (initialLifeExpectancy - activeAge)) * 100))}%`
-            }}
-          >
-            <span className="absolute top-[15%] -translate-y-1/2 h-[18px] bg-[#8A6414] text-[9.5px] font-black tracking-wide text-white px-1.5 flex items-center justify-center leading-none rounded shadow-sm whitespace-nowrap z-20">
-              Retire
-            </span>
-          </div>
+          {/* Milestone Badges: Positioned on the exact same mathematical horizontal line */}
+          {(() => {
+            const isNearDepletion = zeroDepletionPct !== null && Math.abs(retirePct - zeroDepletionPct) < 14;
 
-          {/* Red depletion indicator if balance hits $0 before life horizon */}
-          {zeroDepletionPct !== null && (
-            <div
-              className="absolute top-1 bottom-1 w-0.5 border-r border-dashed border-red-500/50 flex items-center justify-center"
-              style={{
-                left: `${Math.max(5, Math.min(95, zeroDepletionPct))}%`
-              }}
-            >
-              <span className="absolute top-[15%] -translate-y-1/2 h-[18px] bg-red-600 text-[9.5px] font-black tracking-wide text-white px-1.5 flex items-center justify-center leading-none rounded shadow-sm whitespace-nowrap z-20">
-                $0
-              </span>
-            </div>
-          )}
+            return (
+              <>
+                {/* Retire Badge & Guideline */}
+                {retirePct !== null && (
+                  <div
+                    className="absolute top-1 bottom-1 w-0.5 border-r border-dashed border-[#8A6414]/40 flex items-center justify-center -translate-x-1/2 pointer-events-none"
+                    style={{ left: `${retirePct}%` }}
+                  >
+                    <span
+                      className={`absolute ${isNearDepletion ? 'top-[26%]' : 'top-[16%]'} -translate-y-1/2 h-[18px] bg-[#8A6414] text-[9.5px] font-black tracking-wide text-white px-1.5 flex items-center justify-center leading-none rounded shadow-sm whitespace-nowrap z-20 transition-all duration-300 pointer-events-auto`}
+                    >
+                      Retire
+                    </span>
+                  </div>
+                )}
+
+                {/* Red $0 Depletion Badge & Guideline: Elevated above Retire if near */}
+                {zeroDepletionPct !== null && (
+                  <div
+                    className="absolute top-1 bottom-1 w-0.5 border-r border-dashed border-red-500/60 flex items-center justify-center -translate-x-1/2 pointer-events-none"
+                    style={{ left: `${zeroDepletionPct}%` }}
+                  >
+                    <span
+                      className={`absolute ${isNearDepletion ? 'top-[4%]' : 'top-[16%]'} -translate-y-1/2 h-[18px] bg-red-600 text-[9.5px] font-black tracking-wide text-white px-1.5 flex items-center justify-center leading-none rounded shadow-sm whitespace-nowrap z-30 transition-all duration-300 pointer-events-auto`}
+                    >
+                      $0
+                    </span>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
-        {/* Bottom Age Timeline Axis showing key milestone ages */}
-        <div className="w-full relative h-3.5 px-2 mt-0.5 shrink-0 flex items-center select-none">
+        {/* Bottom Age Timeline Axis: Single clean row, physically separated by the adjusted curve */}
+        <div className="w-full relative h-4 mt-0.5 shrink-0 select-none">
           {milestones && milestones.map((m, idx) => (
             <div
               key={idx}
               className="absolute -translate-x-1/2 flex flex-col items-center"
               style={{
-                left: `${m.pct === 0 ? 3 : m.pct === 100 ? 97 : m.pct}%`
+                left: `${m.pct === 0 ? 0 : m.pct === 100 ? 100 : m.pct}%`,
+                transform: m.pct === 0 ? 'translateX(0%)' : m.pct === 100 ? 'translateX(-100%)' : 'translateX(-50%)'
               }}
             >
               <span className={`text-[8.5px] sm:text-[9px] leading-none whitespace-nowrap font-bold ${m.isZero
