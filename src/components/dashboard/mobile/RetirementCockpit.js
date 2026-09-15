@@ -254,13 +254,12 @@ export default function RetirementCockpit({
     // Highest point in this person's trajectory
     const peakTrajectoryBalance = Math.max(...sim.trajectoryPoints.map(p => p.balance), 1);
 
-    // Scale purely against the trajectory peak so the apex dynamically reaches 80-85% of the canvas height
-    // This ensures a bold, dramatic curve regardless of shortfall vs target
+    // Scale purely against the trajectory peak so the apex reaches 50% of the canvas height
     const points = sim.trajectoryPoints.map((p, index) => {
       const x = paddingX + (index / (sim.trajectoryPoints.length - 1)) * availableWidth;
       const normalizedRatio = Math.max(0, p.balance / peakTrajectoryBalance);
-      // Apex reaches near the top of the available chart space (~82% height)
-      const y = height - paddingBottom - (normalizedRatio * availableHeight * 0.88);
+      // Apex reaches exactly 50% of the available chart height
+      const y = height - paddingBottom - (normalizedRatio * availableHeight * 0.50);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     });
 
@@ -910,7 +909,7 @@ export default function RetirementCockpit({
               left: `${Math.max(5, Math.min(95, ((initialRetireAge - activeAge) / (initialLifeExpectancy - activeAge)) * 100))}%`
             }}
           >
-            <span className="absolute -top-0.5 bg-[#8A6414] text-[7.5px] font-black text-white px-1 rounded-sm shadow-sm">
+            <span className="absolute -top-1.5 h-[18px] bg-[#8A6414] text-[9.5px] font-black tracking-wide text-white px-1.5 flex items-center justify-center leading-none rounded shadow-sm whitespace-nowrap">
               Retire
             </span>
           </div>
@@ -923,7 +922,7 @@ export default function RetirementCockpit({
                 left: `${Math.max(5, Math.min(95, zeroDepletionPct))}%`
               }}
             >
-              <span className="absolute -top-0.5 bg-red-600 text-[7px] font-black text-white px-1 rounded-sm shadow-sm">
+              <span className="absolute -top-1.5 h-[18px] bg-red-600 text-[9.5px] font-black tracking-wide text-white px-1.5 flex items-center justify-center leading-none rounded shadow-sm whitespace-nowrap">
                 $0
               </span>
             </div>

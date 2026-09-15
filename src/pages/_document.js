@@ -4,7 +4,9 @@ import Script from "next/script";
 export default function Document() {
   return (
     <Html lang="en">
-      <Head />
+      <Head>
+        <meta name="impact-site-verification" content="15293bce-d070-4d17-887b-bef6ca1c1cab" />
+      </Head>
       <body suppressHydrationWarning>
         <Script id="theme-switcher" strategy="beforeInteractive">
         {`
