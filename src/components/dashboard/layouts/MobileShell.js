@@ -1,5 +1,6 @@
 import React from "react";
 import RetirementCockpit from "../mobile/RetirementCockpit";
+import PartnerAdBanner from "../PartnerAdBanner";
 
 export default function MobileShell({
   user,
@@ -36,17 +37,10 @@ export default function MobileShell({
         />
       </main>
 
-      {/* 50px Height Bottom Ad Display Card (docked in layout flex flow above safe area, never overlays the card) */}
+      {/* 50px Height Bottom Partner Placement (docked in layout flex flow above safe area) */}
       <div className="w-full shrink-0 z-40 bg-white/95 backdrop-blur-md border-t border-black/8 px-4 py-2 flex items-center justify-center shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
         <div className="w-full max-w-2xl mx-auto flex items-center justify-center">
-          <div className="w-full h-[50px] rounded-xl border border-dashed border-black/20 bg-[#F8F9FA] flex items-center justify-center gap-2.5 px-4 select-none">
-            <span className="px-2 py-0.5 rounded bg-black/10 text-[10px] font-black uppercase tracking-wider text-gray-500">
-              AD
-            </span>
-            <span className="text-xs font-semibold text-gray-400 truncate">
-              Ad Placement Area (50px)
-            </span>
-          </div>
+          <PartnerAdBanner referralUrl="https://ibkr.com/referral/aaron6369" />
         </div>
       </div>
     </div>

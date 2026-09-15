@@ -909,7 +909,7 @@ export default function RetirementCockpit({
               left: `${Math.max(5, Math.min(95, ((initialRetireAge - activeAge) / (initialLifeExpectancy - activeAge)) * 100))}%`
             }}
           >
-            <span className="absolute -top-1.5 h-[18px] bg-[#8A6414] text-[9.5px] font-black tracking-wide text-white px-1.5 flex items-center justify-center leading-none rounded shadow-sm whitespace-nowrap">
+            <span className="absolute top-[15%] -translate-y-1/2 h-[18px] bg-[#8A6414] text-[9.5px] font-black tracking-wide text-white px-1.5 flex items-center justify-center leading-none rounded shadow-sm whitespace-nowrap z-20">
               Retire
             </span>
           </div>
@@ -922,7 +922,7 @@ export default function RetirementCockpit({
                 left: `${Math.max(5, Math.min(95, zeroDepletionPct))}%`
               }}
             >
-              <span className="absolute -top-1.5 h-[18px] bg-red-600 text-[9.5px] font-black tracking-wide text-white px-1.5 flex items-center justify-center leading-none rounded shadow-sm whitespace-nowrap">
+              <span className="absolute top-[15%] -translate-y-1/2 h-[18px] bg-red-600 text-[9.5px] font-black tracking-wide text-white px-1.5 flex items-center justify-center leading-none rounded shadow-sm whitespace-nowrap z-20">
                 $0
               </span>
             </div>
