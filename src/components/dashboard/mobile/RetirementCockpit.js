@@ -716,36 +716,36 @@ export default function RetirementCockpit({
     );
   }
 
-  // Once information is entered, display the full Retirement Cockpit design
+  // Once information is entered, display the full Retirement Cockpit design fitted exactly to the available space
   return (
-    <div className="w-full flex flex-col gap-4 pb-12 text-[#1C1C1E] animate-in fade-in duration-300">
-      {/* 1. Full Hero Card (Corpus Goal Section with earlier gold gradient) */}
+    <div className="w-full h-full flex-1 flex flex-col gap-[6px] overflow-hidden text-[#1C1C1E] animate-in fade-in duration-300">
+      {/* 1. Full Hero Card (Corpus Goal Section - comfortably sized) */}
       <div 
-        className="w-full relative text-white rounded-[24px] pt-4 pb-5 px-4 overflow-hidden shadow-lg flex justify-between items-center z-20 flex-shrink-0 select-none border border-black/5"
+        className="w-full shrink-0 relative text-white rounded-2xl py-3 px-3.5 sm:px-4 overflow-hidden shadow-md flex justify-between items-center z-20 select-none border border-black/5"
         style={{
           background: 'linear-gradient(135deg, #C59A3F 0%, #3E2B00 100%)'
         }}
       >
         {/* Ambient subtle light glow */}
-        <div className="absolute top-0 right-0 w-36 h-36 bg-white/15 rounded-full blur-[40px] pointer-events-none" />
+        <div className="absolute top-0 right-0 w-36 h-36 bg-white/15 rounded-full blur-[35px] pointer-events-none" />
 
         {/* Left: Retire Year & Retire Age */}
         <div 
           onClick={() => setIsEnteringSteps(true)}
-          className="flex flex-col items-start w-[28%] relative z-10 cursor-pointer active:scale-95 transition-all group"
+          className="flex flex-col items-start justify-center w-[28%] relative z-10 cursor-pointer active:scale-95 transition-all group"
           title="Tap to adjust Retire Age"
         >
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60 leading-tight group-hover:text-white/90">
+          <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/60 leading-tight group-hover:text-white/90">
             Retire Year
           </span>
-          <span className="text-[16px] font-black leading-none text-white mt-1">
+          <span className="text-[16px] sm:text-[17px] font-black leading-tight text-white mt-0.5">
             {retireYear}
           </span>
-          <div className="mt-2 flex flex-col items-start">
-            <span className="text-[8.5px] font-black uppercase tracking-[0.2em] text-white/60 leading-tight group-hover:text-white/90">
+          <div className="mt-1.5 flex flex-col items-start">
+            <span className="text-[8px] font-black uppercase tracking-[0.18em] text-white/60 leading-tight group-hover:text-white/90">
               Retire Age
             </span>
-            <span className="text-[14px] font-black leading-none text-white mt-0.5">
+            <span className="text-[13px] sm:text-[14px] font-black leading-tight text-white mt-0.5">
               {initialRetireAge}
             </span>
           </div>
@@ -754,12 +754,12 @@ export default function RetirementCockpit({
         {/* Center: Retire Corpus */}
         <div 
           onClick={() => setIsEnteringSteps(true)}
-          className="flex flex-col items-center flex-1 relative z-10 cursor-pointer active:scale-95 transition-transform"
+          className="flex flex-col items-center justify-center flex-1 relative z-10 cursor-pointer active:scale-95 transition-transform"
         >
           <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/70 leading-tight">
             Retire Corpus
           </span>
-          <div className="text-[24px] font-black tracking-tighter leading-none text-white mt-1">
+          <div className="text-[22px] sm:text-[25px] font-black tracking-tight leading-none text-white mt-0.5">
             ${Math.round(sim.requiredCorpus).toLocaleString()}
           </div>
         </div>
@@ -767,37 +767,37 @@ export default function RetirementCockpit({
         {/* Right: Projected Nest Egg */}
         <div 
           onClick={() => setIsEnteringSteps(true)}
-          className="flex flex-col items-end w-[28%] relative z-10 cursor-pointer active:scale-95 transition-all group"
+          className="flex flex-col items-end justify-center w-[28%] relative z-10 cursor-pointer active:scale-95 transition-all group"
         >
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60 leading-tight group-hover:text-white/90">
+          <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/60 leading-tight group-hover:text-white/90">
             Projected
           </span>
-          <span className="text-[16px] font-black leading-none text-white mt-1">
+          <span className="text-[16px] sm:text-[17px] font-black leading-tight text-white mt-0.5">
             ${Math.round(sim.projectedNestEgg).toLocaleString()}
           </span>
-          <div className="mt-2 flex flex-col items-end">
-            <span className="text-[8.5px] font-black uppercase tracking-[0.2em] text-white/60 leading-tight group-hover:text-white/90">
+          <div className="mt-1.5 flex flex-col items-end">
+            <span className="text-[8px] font-black uppercase tracking-[0.18em] text-white/60 leading-tight group-hover:text-white/90">
               Coverage
             </span>
-            <span className={`text-[14px] font-black leading-none mt-0.5 ${sim.isOnTrack ? 'text-[#85E394]' : 'text-orange-300'}`}>
+            <span className={`text-[13px] sm:text-[14px] font-black leading-tight mt-0.5 ${sim.isOnTrack ? 'text-[#85E394]' : 'text-orange-300'}`}>
               {sim.fundedPct.toFixed(0)}%
             </span>
           </div>
         </div>
       </div>
 
-      {/* 2. Trajectory Interactive Sparkline Chart */}
-      <div className="w-full bg-white p-4 rounded-3xl border border-black/10 shadow-[0_4px_20px_rgba(0,0,0,0.04)] flex flex-col gap-2">
-        <div className="flex justify-between items-center">
-          <span className="text-xs font-black uppercase tracking-wider text-gray-500">
+      {/* 2. Trajectory Interactive Sparkline Chart (expands to fill all remaining vertical room) */}
+      <div className="w-full flex-1 min-h-0 bg-white p-3 sm:p-3.5 rounded-2xl border border-black/10 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col justify-between gap-1.5 overflow-hidden">
+        <div className="flex justify-between items-center shrink-0">
+          <span className="text-[11px] font-black uppercase tracking-wider text-gray-500">
             Portfolio Trajectory
           </span>
-          <span className="text-[11px] font-bold text-[#8A6414]">
+          <span className="text-[10.5px] font-bold text-[#8A6414]">
             Age {activeAge} → {initialLifeExpectancy}
           </span>
         </div>
 
-        <div className="w-full h-[120px] relative mt-1 bg-[#F9F9FB] rounded-2xl border border-black/5 overflow-hidden flex items-center justify-center">
+        <div className="w-full flex-1 min-h-0 relative bg-[#F9F9FB] rounded-xl border border-black/5 overflow-hidden flex items-center justify-center">
           <svg className="w-full h-full p-2" viewBox="0 0 340 110" preserveAspectRatio="none">
             <path
               d={chartPath}
@@ -810,68 +810,71 @@ export default function RetirementCockpit({
           </svg>
 
           <div 
-            className="absolute top-2 bottom-2 w-0.5 border-r border-dashed border-[#8A6414]/40 flex items-center justify-center"
+            className="absolute top-1 bottom-1 w-0.5 border-r border-dashed border-[#8A6414]/40 flex items-center justify-center"
             style={{
               left: `${Math.max(5, Math.min(95, ((initialRetireAge - activeAge) / (initialLifeExpectancy - activeAge)) * 100))}%`
             }}
           >
-            <span className="absolute -top-1 bg-[#8A6414] text-[8px] font-black text-white px-1 rounded-sm shadow-sm">
+            <span className="absolute -top-0.5 bg-[#8A6414] text-[7.5px] font-black text-white px-1 rounded-sm shadow-sm">
               Retire
             </span>
           </div>
         </div>
       </div>
 
-      {/* 3. Quick Control Sliders */}
-      <div className="w-full bg-white p-4 rounded-3xl border border-black/10 shadow-[0_4px_20px_rgba(0,0,0,0.04)] flex flex-col gap-4">
-        <div className="flex items-center gap-2">
-          <Sliders size={16} className="text-[#8A6414]" />
-          <span className="text-xs font-black uppercase tracking-wider text-[#1C1C1E]">
+      {/* 3. Quick Control Sliders (fits content nicely with comfortable breathing room) */}
+      <div className="w-full shrink-0 bg-white pt-4 px-4 pb-[18px] rounded-2xl border border-black/10 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col gap-3">
+        <div className="flex items-center gap-1.5">
+          <Sliders size={14} className="text-[#8A6414]" />
+          <span className="text-[11px] font-black uppercase tracking-wider text-[#1C1C1E]">
             Quick Adjustments
           </span>
         </div>
 
-        {/* Monthly Expense Slider */}
-        <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-gray-500 font-semibold">Current Monthly Spend:</span>
-            <span className="font-black text-[#1C1C1E]">${initialMonthlyExpense.toLocaleString()}</span>
+        {/* Sliders Container with extra breathing distance between the 2 sliders */}
+        <div className="flex flex-col gap-3">
+          {/* Monthly Expense Slider */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between items-center text-[11px]">
+              <span className="text-gray-500 font-semibold">Current Monthly Spend:</span>
+              <span className="font-black text-[#1C1C1E]">${initialMonthlyExpense.toLocaleString()}</span>
+            </div>
+            <input
+              type="range"
+              min="1000"
+              max="15000"
+              step="100"
+              value={initialMonthlyExpense}
+              onChange={e => onUpdateParam("monthlyExpense", parseInt(e.target.value, 10))}
+              className="w-full accent-[#C59A3F] cursor-pointer h-2 bg-gray-200 rounded-lg"
+            />
           </div>
-          <input
-            type="range"
-            min="1000"
-            max="15000"
-            step="100"
-            value={initialMonthlyExpense}
-            onChange={e => onUpdateParam("monthlyExpense", parseInt(e.target.value, 10))}
-            className="w-full accent-[#C59A3F] cursor-pointer"
-          />
-        </div>
 
-        {/* Monthly Savings Contribution Slider */}
-        <div className="flex flex-col gap-1.5">
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-gray-500 font-semibold">Monthly Savings:</span>
-            <span className="font-black text-[#2E7D32]">${initialMonthlyInvestment.toLocaleString()}</span>
+          {/* Monthly Savings Contribution Slider */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between items-center text-[11px]">
+              <span className="text-gray-500 font-semibold">Monthly Savings:</span>
+              <span className="font-black text-[#2E7D32]">${initialMonthlyInvestment.toLocaleString()}</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="5000"
+              step="50"
+              value={initialMonthlyInvestment}
+              onChange={e => onUpdateParam("monthlyInvestment", parseInt(e.target.value, 10))}
+              className="w-full accent-[#2E7D32] cursor-pointer h-2 bg-gray-200 rounded-lg"
+            />
           </div>
-          <input
-            type="range"
-            min="0"
-            max="5000"
-            step="50"
-            value={initialMonthlyInvestment}
-            onChange={e => onUpdateParam("monthlyInvestment", parseInt(e.target.value, 10))}
-            className="w-full accent-[#2E7D32] cursor-pointer"
-          />
         </div>
       </div>
 
-      {/* Re-Configure Button & Reset */}
-      <div className="flex gap-2">
+      {/* 4. Re-Configure Button & Reset */}
+      <div className="flex gap-2 shrink-0 h-12 sm:h-13">
         <button
           type="button"
           onClick={() => setIsEnteringSteps(true)}
-          className="flex-1 py-3.5 px-4 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black uppercase tracking-wider text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+          className="flex-1 h-full px-4 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black uppercase tracking-wider text-xs rounded-xl sm:rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
         >
           <Sparkles size={16} />
           <span>Edit Information</span>
@@ -880,7 +883,7 @@ export default function RetirementCockpit({
         <button
           type="button"
           onClick={onResetInfo}
-          className="p-3.5 bg-white hover:bg-black/5 border border-black/10 rounded-2xl text-gray-500 hover:text-[#1C1C1E] transition-all active:scale-95 shadow-sm cursor-pointer"
+          className="w-12 sm:w-13 h-full bg-white hover:bg-black/5 border border-black/10 rounded-xl sm:rounded-2xl text-gray-500 hover:text-[#1C1C1E] transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
           title="Reset to initial card"
         >
           <RefreshCw size={16} />

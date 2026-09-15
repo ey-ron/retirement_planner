@@ -26,7 +26,7 @@ export default function MobileShell({
       </div>
 
       {/* Main Responsive Viewport */}
-      <main className="w-full max-w-2xl mx-auto px-4 sm:px-6 pt-2 sm:pt-3 pb-2 flex-1 flex flex-col min-h-0 overflow-y-auto no-scrollbar">
+      <main className="w-full max-w-2xl mx-auto px-4 sm:px-6 pt-2 sm:pt-3 pb-2 flex-1 flex flex-col min-h-0 overflow-hidden">
         <RetirementCockpit
           simulationData={simulationData}
           hasEnteredInfo={hasEnteredInfo}
