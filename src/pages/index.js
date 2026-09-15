@@ -29,7 +29,7 @@ export default function Dashboard() {
     <>
       <Head>
         <title>Retirement Simulator</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
         <link rel="icon" href="/icon-512x512.png" key="favicon" />
         <link rel="apple-touch-icon" href="/icon-512x512.png" key="apple" />
       </Head>
