@@ -56,7 +56,95 @@ create policy "Users can delete own plans"
   on public.saved_plans for delete
   using (auth.uid() = user_id);
 
--- 3. Automatic Profile Creation Trigger on Signup / Auth
+-- 3. Create PRO_LICENSES Table with 7 Unlockables
+create table if not exists public.pro_licenses (
+  id uuid default gen_random_uuid() primary key,
+  email text unique not null,
+  name text,
+  is_pro boolean default true,
+  lemon_order_id text,
+  country text default 'Singapore',
+  -- 7 Unlockable Feature Placeholders (values: 'Unlocked' or 'Locked')
+  unlock_1 text default 'Locked',
+  unlock_2 text default 'Locked',
+  unlock_3 text default 'Locked',
+  unlock_4 text default 'Locked',
+  unlock_5 text default 'Locked',
+  unlock_6 text default 'Locked',
+  unlock_7 text default 'Locked',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Ensure new columns are added if pro_licenses table already existed earlier
+alter table public.pro_licenses add column if not exists country text default 'Singapore';
+alter table public.pro_licenses add column if not exists unlock_1 text default 'Locked';
+alter table public.pro_licenses alter column unlock_1 set default 'Locked';
+alter table public.pro_licenses add column if not exists unlock_2 text default 'Locked';
+alter table public.pro_licenses add column if not exists unlock_3 text default 'Locked';
+alter table public.pro_licenses add column if not exists unlock_4 text default 'Locked';
+alter table public.pro_licenses add column if not exists unlock_5 text default 'Locked';
+alter table public.pro_licenses add column if not exists unlock_6 text default 'Locked';
+alter table public.pro_licenses add column if not exists unlock_7 text default 'Locked';
+alter table public.pro_licenses enable row level security;
+
+create policy "Allow read access to pro_licenses"
+  on public.pro_licenses for select
+  using (true);
+
+create policy "Allow insert/update to pro_licenses"
+  on public.pro_licenses for all
+  using (true);
+
+-- 4. Create Dedicated USER_RETIREMENT_PLANS Table (Linked to pro_licenses via user_id)
+create table if not exists public.user_retirement_plans (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.pro_licenses(id) on delete cascade,
+  email text not null,
+  
+  -- Plan Input Columns
+  birth_date date not null default '1995-01-01',
+  monthly_expense numeric(12,2) not null default 3000.00,
+  retire_age integer not null default 50,
+  life_expectancy integer not null default 85,
+  current_nest_egg numeric(14,2) not null default 20000.00,
+  monthly_investment numeric(12,2) not null default 800.00,
+  cagr numeric(5,2) not null default 8.00,
+  inflation numeric(5,2) not null default 3.50,
+  
+  -- Calculated Snapshot Columns
+  current_age integer,
+  retire_year integer,
+  future_monthly_expense numeric(12,2),
+  required_corpus numeric(14,2),
+  projected_nest_egg numeric(14,2),
+  shortfall numeric(14,2) default 0.00,
+  surplus numeric(14,2) default 0.00,
+  funded_pct numeric(5,2) default 0.00,
+  is_on_track boolean default false,
+  currency_symbol text default '$',
+  
+  -- Timestamps
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Indexes for lightning-fast lookups
+create index if not exists idx_user_retirement_plans_user_id on public.user_retirement_plans(user_id);
+create index if not exists idx_user_retirement_plans_email on public.user_retirement_plans(email);
+
+-- Enable RLS on user_retirement_plans
+alter table public.user_retirement_plans enable row level security;
+
+create policy "Allow read access to user_retirement_plans"
+  on public.user_retirement_plans for select
+  using (true);
+
+create policy "Allow insert/update to user_retirement_plans"
+  on public.user_retirement_plans for all
+  using (true);
+
+-- 5. Automatic Profile Creation Trigger on Signup / Auth
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin

@@ -873,7 +873,7 @@ export default function RetirementCockpit({
       {/* 1. Full Hero Card (Corpus Goal Section - comfortably sized) */}
       <div
         onClick={() => setIsEnteringSteps(true)}
-        className="w-full shrink-0 relative text-white rounded-2xl sm:rounded-3xl py-2.5 sm:py-3 md:py-3.5 px-3.5 sm:px-4 md:px-5 overflow-hidden shadow-md flex flex-col justify-between z-20 select-none border border-black/5 cursor-pointer active:scale-[0.99] transition-all"
+        className="w-full shrink-0 relative text-white rounded-2xl sm:rounded-3xl py-2.5 sm:py-3 md:py-3.5 px-3.5 sm:px-4 md:px-5 overflow-hidden shadow-md flex flex-col justify-between z-20 select-none border border-amber-300/20 cursor-pointer"
         style={{
           background: 'linear-gradient(135deg, #C59A3F 0%, #3E2B00 100%)'
         }}
@@ -1062,7 +1062,7 @@ export default function RetirementCockpit({
             10,000+ Market Simulations
           </span>
           <span className="text-[9.5px] font-semibold text-gray-400">
-            Available in Pro
+            Register to Explore
           </span>
         </div>
       </div>

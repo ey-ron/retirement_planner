@@ -16,73 +16,70 @@ const DEFAULT_SIMULATION = {
 export default function HomeDashboard({ user }) {
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   
-  // Track whether the user has entered their information
-  const [hasEnteredInfo, setHasEnteredInfo] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("retirement_info_entered") === "true";
-    }
-    return false;
-  });
+  // Track whether the user has entered their information in the current session
+  // Never load from browser storage so returning visitors always start with the 6-step wizard
+  const [hasEnteredInfo, setHasEnteredInfo] = useState(false);
 
-  const [simulationData, setSimulationData] = useState(() => {
+  const [simulationData, setSimulationData] = useState(() => ({
+    ...DEFAULT_SIMULATION,
+    birthDate: user?.user_metadata?.birth_date || DEFAULT_SIMULATION.birthDate
+  }));
+
+  // Clean up any stale simulation keys from previous sessions in browser storage
+  useEffect(() => {
     if (typeof window !== "undefined") {
       try {
-        const saved = localStorage.getItem("retirement_simulation_data");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          return { ...DEFAULT_SIMULATION, ...parsed };
-        }
-      } catch (e) {
-        console.warn("Could not load simulation cache:", e);
-      }
+        localStorage.removeItem("retirement_info_entered");
+        localStorage.removeItem("retirement_simulation_data");
+      } catch (e) {}
     }
-    return {
-      ...DEFAULT_SIMULATION,
-      birthDate: user?.user_metadata?.birth_date || DEFAULT_SIMULATION.birthDate
-    };
-  });
+  }, []);
 
   const handleUpdateParam = (key, value) => {
-    setSimulationData(prev => {
-      const updated = { ...prev, [key]: value };
-      try {
-        localStorage.setItem("retirement_simulation_data", JSON.stringify(updated));
-      } catch (e) {
-        // ignore storage errors
-      }
-      return updated;
-    });
+    setSimulationData(prev => ({ ...prev, [key]: value }));
   };
 
   const handleUpdateFullPlan = (fullPlan) => {
-    setSimulationData(prev => {
-      const updated = {
-        ...prev,
-        birthDate: fullPlan.birthDate,
-        monthlyExpense: fullPlan.monthlyExpense,
-        retireAge: fullPlan.retireAge,
-        lifeExpectancy: fullPlan.lifeExpectancy,
-        currentNestEgg: fullPlan.currentNestEgg,
-        monthlyInvestment: fullPlan.monthlyInvestment,
-        cagr: fullPlan.cagr,
-        inflation: fullPlan.inflation
-      };
-      try {
-        localStorage.setItem("retirement_simulation_data", JSON.stringify(updated));
-        localStorage.setItem("retirement_info_entered", "true");
-      } catch (e) {
-        // ignore
-      }
-      return updated;
-    });
+    const updatedPlan = {
+      birthDate: fullPlan.birthDate,
+      monthlyExpense: fullPlan.monthlyExpense,
+      retireAge: fullPlan.retireAge,
+      lifeExpectancy: fullPlan.lifeExpectancy,
+      currentNestEgg: fullPlan.currentNestEgg,
+      monthlyInvestment: fullPlan.monthlyInvestment,
+      cagr: fullPlan.cagr,
+      inflation: fullPlan.inflation
+    };
+
+    setSimulationData(prev => ({
+      ...prev,
+      ...updatedPlan
+    }));
     setHasEnteredInfo(true);
+
+    // If user is registered/logged in, save plan to Supabase table
+    if (typeof window !== "undefined") {
+      const email = localStorage.getItem("retirement_pro_email");
+      const isPro = localStorage.getItem("retirement_is_pro") === "true";
+      if (isPro && email) {
+        try {
+          localStorage.setItem("retirement_saved_plan", JSON.stringify(updatedPlan));
+          fetch("/api/auth/save-plan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, planData: updatedPlan })
+          }).catch(err => console.warn("Auto save plan sync:", err));
+        } catch (e) {}
+      }
+    }
   };
 
   const handleResetInfo = () => {
     setHasEnteredInfo(false);
-    try {
-      localStorage.removeItem("retirement_info_entered");
-    } catch (e) {}
+    setSimulationData({
+      ...DEFAULT_SIMULATION,
+      birthDate: user?.user_metadata?.birth_date || DEFAULT_SIMULATION.birthDate
+    });
   };
 
   return (
