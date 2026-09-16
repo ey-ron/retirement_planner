@@ -872,11 +872,11 @@ export default function RetirementCockpit({
 
   // Once information is entered, display the full Retirement Cockpit design fitted exactly to the available space
   return (
-    <div className="w-full h-full flex-1 flex flex-col gap-[6px] overflow-hidden text-[#1C1C1E] animate-in fade-in duration-300">
+    <div className="w-full h-full flex-1 flex flex-col gap-1.5 sm:gap-2 md:gap-2.5 overflow-hidden text-[#1C1C1E] animate-in fade-in duration-300">
       {/* 1. Full Hero Card (Corpus Goal Section - comfortably sized) */}
       <div
         onClick={() => setIsEnteringSteps(true)}
-        className="w-full shrink-0 relative text-white rounded-2xl py-2.5 px-3.5 sm:px-4 overflow-hidden shadow-md flex flex-col justify-between z-20 select-none border border-black/5 cursor-pointer active:scale-[0.99] transition-all"
+        className="w-full shrink-0 relative text-white rounded-2xl sm:rounded-3xl py-2.5 sm:py-3 md:py-3.5 px-3.5 sm:px-4 md:px-5 overflow-hidden shadow-md flex flex-col justify-between z-20 select-none border border-black/5 cursor-pointer active:scale-[0.99] transition-all"
         style={{
           background: 'linear-gradient(135deg, #C59A3F 0%, #3E2B00 100%)'
         }}
