@@ -69,24 +69,24 @@ export default function MobileShell({
     <div className="w-full h-[100dvh] max-h-[100dvh] bg-[#F2F2F7] text-[#1C1C1E] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)]">
       {/* Floating Header */}
       <div className="w-full max-w-2xl mx-auto pt-2 sm:pt-3 px-4 shrink-0 z-30">
-        <header className="w-full bg-white/85 backdrop-blur-xl border border-black/8 rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] px-3.5 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 min-h-[48px] sm:min-h-[54px] md:min-h-[60px] flex items-center justify-between transition-all">
-          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+        <header className="w-full bg-white/85 backdrop-blur-xl border border-black/8 rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] px-3.5 sm:px-5 md:px-6 py-2 sm:py-3 md:py-3.5 min-h-[48px] sm:min-h-[64px] md:min-h-[72px] flex items-center justify-between transition-all">
+          <div className="flex items-center gap-2.5 sm:gap-3.5 md:gap-4 min-w-0">
             <img
               src="/icon-192x192.png"
               alt="Retirement Simulator Icon"
-              className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 rounded-xl md:rounded-2xl object-contain shadow-[0_2px_8px_rgba(0,0,0,0.08)] select-none shrink-0"
+              className="w-7 h-7 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl sm:rounded-2xl object-contain shadow-[0_2px_8px_rgba(0,0,0,0.08)] select-none shrink-0"
             />
             {isPro ? (
               <div className="flex flex-col min-w-0 leading-tight">
-                <span className="text-sm sm:text-base md:text-lg font-black tracking-tight text-[#1C1C1E] truncate">
+                <span className="text-sm sm:text-lg md:text-xl font-black tracking-tight text-[#1C1C1E] truncate">
                   {proName || "Pro Member"}
                 </span>
-                <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-[#8A6414] tracking-tight truncate">
+                <span className="text-[10px] sm:text-xs md:text-sm font-semibold text-[#8A6414] tracking-tight truncate">
                   Retirement Journey
                 </span>
               </div>
             ) : (
-              <span className="text-sm sm:text-base md:text-lg font-black tracking-tight text-[#1C1C1E] truncate">
+              <span className="text-sm sm:text-lg md:text-xl font-black tracking-tight text-[#1C1C1E] truncate">
                 Retirement Simulator
               </span>
             )}
@@ -97,18 +97,18 @@ export default function MobileShell({
             <button
               type="button"
               onClick={() => setIsUpgradeModalOpen(true)}
-              className="flex items-center gap-1.5 md:gap-2 px-3 sm:px-3.5 md:px-4 py-1.5 rounded-xl md:rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-800 font-black text-[11px] sm:text-xs md:text-sm shadow-sm cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 md:gap-2 px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 rounded-xl sm:rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-800 font-black text-[11px] sm:text-xs md:text-sm shadow-sm cursor-pointer shrink-0"
             >
-              <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-emerald-600" />
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 text-emerald-600" />
               <span>Pro</span>
             </button>
           ) : (
             <button
               type="button"
               onClick={() => setIsUpgradeModalOpen(true)}
-              className="flex items-center gap-1.5 md:gap-2 px-3 sm:px-3.5 md:px-4 py-1.5 rounded-xl md:rounded-2xl bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-95 text-white font-extrabold text-[11px] sm:text-xs md:text-sm shadow-[0_2px_10px_rgba(197,154,63,0.3)] transition-all cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 md:gap-2 px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-95 text-white font-extrabold text-[11px] sm:text-xs md:text-sm shadow-[0_2px_10px_rgba(197,154,63,0.3)] transition-all cursor-pointer shrink-0"
             >
-              <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-200" />
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 text-amber-200" />
               <span>Go Pro</span>
             </button>
           )}

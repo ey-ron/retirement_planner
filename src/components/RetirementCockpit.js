@@ -473,31 +473,31 @@ export default function RetirementCockpit({
                 )}
               </div>
 
-              {/* Step Dynamic Content Area: Scrollable with auto-focus support so inputs are never hidden behind virtual keyboard */}
-              <div className="flex-1 flex flex-col justify-start sm:justify-center py-2 sm:py-3 pb-36 sm:pb-4 overflow-y-auto min-h-0 scroll-smooth">
+              {/* Step Dynamic Content Area: Fully non-scrollable, vertically centered and proportional */}
+              <div className="flex-1 flex flex-col justify-center py-1 sm:py-2 min-h-0 overflow-hidden">
                 {/* STEP 1 */}
                 {step === 1 && (
-                  <div className="flex flex-col gap-3 sm:gap-4 animate-in fade-in duration-200">
+                  <div className="flex flex-col gap-2.5 sm:gap-3.5 animate-in fade-in duration-200">
                     <div>
-                      <h4 className="text-lg sm:text-xl font-black text-[#1C1C1E]">When were you born?</h4>
-                      <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">
+                      <h4 className="text-base sm:text-lg md:text-xl font-black text-[#1C1C1E]">When were you born?</h4>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-0.5 leading-relaxed">
                         Your birth date anchors your exact age, accumulation horizon, and milestone timeline.
                       </p>
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                      <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <Calendar size={13} className="text-[#8A6414]" />
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10.5px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <Calendar size={12} className="text-[#8A6414]" />
                         Date of Birth
                       </label>
-                      <div className="grid grid-cols-3 gap-2.5 w-full">
+                      <div className="grid grid-cols-3 gap-2 w-full">
                         <select
                           value={formBirthDate ? formBirthDate.split("-")[1] : "01"}
                           onChange={e => {
                             const parts = (formBirthDate || "1995-01-01").split("-");
                             setFormBirthDate(`${parts[0] || "1995"}-${e.target.value}-${parts[2] || "01"}`);
                           }}
-                          className="w-full py-3 px-2 bg-[#F2F2F7] border border-black/10 rounded-2xl font-bold text-[#1C1C1E] text-xs sm:text-sm outline-none focus:border-[#C59A3F] focus:bg-white text-center cursor-pointer shadow-sm"
+                          className="w-full py-2.5 px-2 bg-[#F2F2F7] border border-black/10 rounded-2xl font-bold text-[#1C1C1E] text-xs sm:text-sm outline-none focus:border-[#C59A3F] focus:bg-white text-center cursor-pointer shadow-sm"
                         >
                           {[
                             { val: "01", name: "Jan" }, { val: "02", name: "Feb" }, { val: "03", name: "Mar" },
@@ -513,7 +513,7 @@ export default function RetirementCockpit({
                             const parts = (formBirthDate || "1995-01-01").split("-");
                             setFormBirthDate(`${parts[0] || "1995"}-${parts[1] || "01"}-${e.target.value}`);
                           }}
-                          className="w-full py-3 px-2 bg-[#F2F2F7] border border-black/10 rounded-2xl font-bold text-[#1C1C1E] text-xs sm:text-sm outline-none focus:border-[#C59A3F] focus:bg-white text-center cursor-pointer shadow-sm"
+                          className="w-full py-2.5 px-2 bg-[#F2F2F7] border border-black/10 rounded-2xl font-bold text-[#1C1C1E] text-xs sm:text-sm outline-none focus:border-[#C59A3F] focus:bg-white text-center cursor-pointer shadow-sm"
                         >
                           {Array.from({ length: 31 }, (_, i) => {
                             const day = String(i + 1).padStart(2, "0");
@@ -527,7 +527,7 @@ export default function RetirementCockpit({
                             const parts = (formBirthDate || "1995-01-01").split("-");
                             setFormBirthDate(`${e.target.value}-${parts[1] || "01"}-${parts[2] || "01"}`);
                           }}
-                          className="w-full py-3 px-2 bg-[#F2F2F7] border border-black/10 rounded-2xl font-bold text-[#1C1C1E] text-xs sm:text-sm outline-none focus:border-[#C59A3F] focus:bg-white text-center cursor-pointer shadow-sm"
+                          className="w-full py-2.5 px-2 bg-[#F2F2F7] border border-black/10 rounded-2xl font-bold text-[#1C1C1E] text-xs sm:text-sm outline-none focus:border-[#C59A3F] focus:bg-white text-center cursor-pointer shadow-sm"
                         >
                           {Array.from({ length: 80 }, (_, i) => {
                             const year = String(new Date().getFullYear() - 18 - i);
@@ -537,13 +537,13 @@ export default function RetirementCockpit({
                       </div>
                     </div>
 
-                    <div className="p-3 sm:p-3.5 bg-[#F8F9FA] border border-black/5 rounded-2xl flex items-center justify-between shadow-sm whitespace-nowrap">
+                    <div className="p-2.5 sm:p-3 bg-[#F8F9FA] border border-black/5 rounded-2xl flex items-center justify-between shadow-sm whitespace-nowrap">
                       <div className="flex flex-col">
                         <span className="text-xs sm:text-sm font-bold text-gray-700">Calculated Age</span>
                         <span className="text-[10px] text-gray-500 font-medium">Actuarial Baseline</span>
                       </div>
                       <div className="flex items-baseline gap-1.5 shrink-0">
-                        <span className="text-xl sm:text-2xl font-black text-[#8A6414]">{formAge}</span>
+                        <span className="text-lg sm:text-xl font-black text-[#8A6414]">{formAge}</span>
                         <span className="text-xs font-bold text-gray-500 uppercase">years old</span>
                       </div>
                     </div>
@@ -552,20 +552,20 @@ export default function RetirementCockpit({
 
                 {/* STEP 2 */}
                 {step === 2 && (
-                  <div className="flex flex-col gap-3 sm:gap-4 animate-in fade-in duration-200">
+                  <div className="flex flex-col gap-2.5 sm:gap-3.5 animate-in fade-in duration-200">
                     <div>
-                      <h4 className="text-lg sm:text-xl font-black text-[#1C1C1E]">Current Monthly Expenses</h4>
-                      <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">
+                      <h4 className="text-base sm:text-lg md:text-xl font-black text-[#1C1C1E]">Current Monthly Expenses</h4>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-0.5 leading-relaxed">
                         Estimated living costs today, compounded for inflation through retirement.
                       </p>
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                      <label htmlFor="step2-monthly-expense" className="text-[11px] font-bold text-gray-500 uppercase tracking-wider cursor-pointer">
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="step2-monthly-expense" className="text-[10.5px] font-bold text-gray-500 uppercase tracking-wider cursor-pointer">
                         Monthly Living Cost Today:
                       </label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-gray-400 pointer-events-none">$</span>
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base font-black text-gray-400 pointer-events-none">$</span>
                         <input
                           id="step2-monthly-expense"
                           type="text"
@@ -573,8 +573,7 @@ export default function RetirementCockpit({
                           placeholder="3,000"
                           value={formatNumberWithCommas(formMonthlyExpense)}
                           onChange={e => setFormMonthlyExpense(parseNumberClean(e.target.value))}
-                          onFocus={handleInputScrollFocus}
-                          className="w-full py-3.5 pl-10 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-lg outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
+                          className="w-full py-2.5 pl-8 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-base sm:text-lg outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
                         />
                       </div>
                     </div>
@@ -585,7 +584,7 @@ export default function RetirementCockpit({
                           key={amt}
                           type="button"
                           onClick={() => setFormMonthlyExpense(amt)}
-                          className={`flex-1 py-2 sm:py-2.5 rounded-xl text-xs font-bold border transition-all active:scale-95 cursor-pointer shadow-sm ${Number(formMonthlyExpense) === amt
+                          className={`flex-1 py-1.5 sm:py-2 rounded-xl text-xs font-bold border transition-all active:scale-95 cursor-pointer shadow-sm ${Number(formMonthlyExpense) === amt
                             ? 'bg-[#C59A3F]/15 border-[#C59A3F] text-[#8A6414] font-black'
                             : 'bg-[#F2F2F7] border-black/5 text-gray-600 hover:text-[#1C1C1E]'
                             }`}
@@ -599,19 +598,19 @@ export default function RetirementCockpit({
 
                 {/* STEP 3 */}
                 {step === 3 && (
-                  <div className="flex flex-col gap-3 sm:gap-4 animate-in fade-in duration-200">
+                  <div className="flex flex-col gap-2.5 sm:gap-3.5 animate-in fade-in duration-200">
                     <div>
-                      <h4 className="text-lg sm:text-xl font-black text-[#1C1C1E]">Target Age & Life Horizon</h4>
-                      <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">
+                      <h4 className="text-base sm:text-lg md:text-xl font-black text-[#1C1C1E]">Target Age & Life Horizon</h4>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-0.5 leading-relaxed">
                         When you plan to stop working and your planned life horizon.
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-2 shadow-sm">
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="p-2.5 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-1.5 shadow-sm">
                         <div className="flex justify-between items-baseline">
                           <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Retire Age</label>
-                          <span className="text-sm font-black text-[#8A6414]">{formRetireAge} <span className="text-[10px] font-normal text-gray-400">yrs</span></span>
+                          <span className="text-xs sm:text-sm font-black text-[#8A6414]">{formRetireAge} <span className="text-[9.5px] font-normal text-gray-400">yrs</span></span>
                         </div>
                         <input
                           type="range"
@@ -626,15 +625,15 @@ export default function RetirementCockpit({
                             background: `linear-gradient(to right, #C59A3F ${Math.min(100, Math.max(0, ((formRetireAge - (formAge + 1)) / Math.max(1, 80 - (formAge + 1))) * 100))}%, #E5E5EA ${Math.min(100, Math.max(0, ((formRetireAge - (formAge + 1)) / Math.max(1, 80 - (formAge + 1))) * 100))}%)`
                           }}
                         />
-                        <span className="text-[10px] text-gray-500 font-medium">
+                        <span className="text-[9.5px] text-gray-500 font-medium">
                           {Math.max(0, formRetireAge - formAge)} yrs from now
                         </span>
                       </div>
 
-                      <div className="p-3 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-2 shadow-sm">
+                      <div className="p-2.5 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-1.5 shadow-sm">
                         <div className="flex justify-between items-baseline">
                           <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Horizon</label>
-                          <span className="text-sm font-black text-[#2E7D32]">{formLifeExpectancy} <span className="text-[10px] font-normal text-gray-400">yrs</span></span>
+                          <span className="text-xs sm:text-sm font-black text-[#2E7D32]">{formLifeExpectancy} <span className="text-[9.5px] font-normal text-gray-400">yrs</span></span>
                         </div>
                         <input
                           type="range"
@@ -649,15 +648,15 @@ export default function RetirementCockpit({
                             background: `linear-gradient(to right, #2E7D32 ${Math.min(100, Math.max(0, ((formLifeExpectancy - (formRetireAge + 1)) / Math.max(1, 105 - (formRetireAge + 1))) * 100))}%, #E5E5EA ${Math.min(100, Math.max(0, ((formLifeExpectancy - (formRetireAge + 1)) / Math.max(1, 105 - (formRetireAge + 1))) * 100))}%)`
                           }}
                         />
-                        <span className="text-[10px] text-gray-500 font-medium">
+                        <span className="text-[9.5px] text-gray-500 font-medium">
                           {Math.max(0, formLifeExpectancy - formRetireAge)} retirement yrs
                         </span>
                       </div>
                     </div>
 
-                    <div className="p-2.5 sm:p-3 bg-[#C59A3F]/10 border border-[#C59A3F]/20 rounded-2xl flex items-center gap-2.5">
-                      <Clock size={16} className="text-[#8A6414] shrink-0" />
-                      <span className="text-xs text-gray-700 leading-snug">
+                    <div className="p-2 sm:p-2.5 bg-[#C59A3F]/10 border border-[#C59A3F]/20 rounded-2xl flex items-center gap-2">
+                      <Clock size={14} className="text-[#8A6414] shrink-0" />
+                      <span className="text-[11px] sm:text-xs text-gray-700 leading-snug">
                         Drawdown window: <strong>{Math.max(0, formLifeExpectancy - formRetireAge)} years</strong> starting at age <strong>{formRetireAge}</strong>.
                       </span>
                     </div>
@@ -666,17 +665,17 @@ export default function RetirementCockpit({
 
                 {/* STEP 4 */}
                 {step === 4 && (
-                  <div className="flex flex-col gap-3 sm:gap-4 animate-in fade-in duration-200">
+                  <div className="flex flex-col gap-2.5 sm:gap-3.5 animate-in fade-in duration-200">
                     <div>
-                      <h4 className="text-lg sm:text-xl font-black text-[#1C1C1E]">Nest Egg & Monthly Savings</h4>
-                      <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">
+                      <h4 className="text-base sm:text-lg md:text-xl font-black text-[#1C1C1E]">Nest Egg & Monthly Savings</h4>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-0.5 leading-relaxed">
                         Your starting capital and ongoing monthly contribution.
                       </p>
                     </div>
 
-                    <div className="flex flex-col gap-3">
-                      <div className="flex flex-col gap-1.5">
-                        <label htmlFor="step4-nest-egg" className="text-[11px] font-bold text-gray-500 uppercase tracking-wider cursor-pointer">
+                    <div className="flex flex-col gap-2.5">
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor="step4-nest-egg" className="text-[10.5px] font-bold text-gray-500 uppercase tracking-wider cursor-pointer">
                           Current Starting Nest Egg:
                         </label>
                         <div className="relative">
@@ -688,14 +687,13 @@ export default function RetirementCockpit({
                             placeholder="20,000"
                             value={formatNumberWithCommas(formCurrentNestEgg)}
                             onChange={e => setFormCurrentNestEgg(parseNumberClean(e.target.value))}
-                            onFocus={handleInputScrollFocus}
-                            className="w-full py-3 pl-9 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-base outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
+                            className="w-full py-2.5 pl-8 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-sm sm:text-base outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
                           />
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-1.5">
-                        <label htmlFor="step4-monthly-contribution" className="text-[11px] font-bold text-gray-500 uppercase tracking-wider cursor-pointer">
+                      <div className="flex flex-col gap-1">
+                        <label htmlFor="step4-monthly-contribution" className="text-[10.5px] font-bold text-gray-500 uppercase tracking-wider cursor-pointer">
                           Planned Monthly Contribution:
                         </label>
                         <div className="relative">
@@ -707,8 +705,7 @@ export default function RetirementCockpit({
                             placeholder="800"
                             value={formatNumberWithCommas(formMonthlyInvestment)}
                             onChange={e => setFormMonthlyInvestment(parseNumberClean(e.target.value))}
-                            onFocus={handleInputScrollFocus}
-                            className="w-full py-3 pl-9 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-base outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
+                            className="w-full py-2.5 pl-8 pr-4 bg-[#F2F2F7] border border-black/10 rounded-2xl font-black text-[#1C1C1E] text-sm sm:text-base outline-none focus:border-[#C59A3F] focus:bg-white shadow-sm"
                           />
                         </div>
                       </div>
@@ -718,19 +715,19 @@ export default function RetirementCockpit({
 
                 {/* STEP 5 */}
                 {step === 5 && (
-                  <div className="flex flex-col gap-3 sm:gap-4 animate-in fade-in duration-200">
+                  <div className="flex flex-col gap-2.5 sm:gap-3.5 animate-in fade-in duration-200">
                     <div>
-                      <h4 className="text-lg sm:text-xl font-black text-[#1C1C1E]">Expected Returns & Inflation</h4>
-                      <p className="text-xs sm:text-sm text-gray-500 mt-1 leading-relaxed">
+                      <h4 className="text-base sm:text-lg md:text-xl font-black text-[#1C1C1E]">Expected Returns & Inflation</h4>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-0.5 leading-relaxed">
                         Set annual compounding returns and long-term inflation rate.
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-1.5 shadow-sm">
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="p-2.5 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-1 shadow-sm">
                         <div className="flex justify-between items-baseline">
                           <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Growth (CAGR)</label>
-                          <span className="text-sm font-black text-[#2E7D32]">{Number(formCagr).toFixed(1)}%</span>
+                          <span className="text-xs sm:text-sm font-black text-[#2E7D32]">{Number(formCagr).toFixed(1)}%</span>
                         </div>
                         <input
                           type="range"
@@ -747,12 +744,12 @@ export default function RetirementCockpit({
                         />
                       </div>
 
-                      <div className="p-3 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-1.5 shadow-sm">
+                      <div className="p-2.5 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-1 shadow-sm">
                         <div className="flex justify-between items-baseline">
                           <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                            Inflation <span className="normal-case font-medium text-[9.5px] text-gray-400">(Estimated)</span>
+                            Inflation <span className="normal-case font-medium text-[9px] text-gray-400">(Est.)</span>
                           </label>
-                          <span className="text-sm font-black text-[#D32F2F]">{Number(formInflation).toFixed(1)}%</span>
+                          <span className="text-xs sm:text-sm font-black text-[#D32F2F]">{Number(formInflation).toFixed(1)}%</span>
                         </div>
                         <input
                           type="range"
@@ -770,9 +767,9 @@ export default function RetirementCockpit({
                       </div>
                     </div>
 
-                    <div className="px-3.5 py-2.5 bg-[#F8F9FA] border border-black/5 rounded-2xl flex justify-between items-center text-xs shadow-sm">
-                      <span className="text-gray-500 font-semibold">Net Real Growth Rate:</span>
-                      <span className="font-black text-[#8A6414] text-sm">
+                    <div className="px-3 py-2 bg-[#F8F9FA] border border-black/5 rounded-2xl flex justify-between items-center text-xs shadow-sm">
+                      <span className="text-gray-500 font-semibold text-[11px] sm:text-xs">Net Real Growth Rate:</span>
+                      <span className="font-black text-[#8A6414] text-xs sm:text-sm">
                         {(Number(formCagr) - Number(formInflation)).toFixed(1)}% / yr
                       </span>
                     </div>
@@ -781,46 +778,46 @@ export default function RetirementCockpit({
 
                 {/* STEP 6 */}
                 {step === 6 && (
-                  <div className="flex flex-col gap-3 animate-in fade-in duration-200">
+                  <div className="flex flex-col gap-2.5 animate-in fade-in duration-200">
                     <div className="flex justify-between items-center">
-                      <h4 className="text-lg sm:text-xl font-black text-[#1C1C1E]">Simulation Forecast</h4>
+                      <h4 className="text-base sm:text-lg md:text-xl font-black text-[#1C1C1E]">Simulation Forecast</h4>
                       {stepSimulation.isOnTrack ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-green-100 text-green-800 border border-green-300 flex items-center gap-1 shadow-sm">
-                          <CheckCircle2 size={12} /> ON TRACK
+                        <span className="px-2 py-0.5 rounded-full text-[9.5px] font-black bg-green-100 text-green-800 border border-green-300 flex items-center gap-1 shadow-sm">
+                          <CheckCircle2 size={11} /> ON TRACK
                         </span>
                       ) : (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-orange-100 text-orange-800 border border-orange-300 flex items-center gap-1 shadow-sm">
-                          <AlertCircle size={12} /> SHORTFALL
+                        <span className="px-2 py-0.5 rounded-full text-[9.5px] font-black bg-orange-100 text-orange-800 border border-orange-300 flex items-center gap-1 shadow-sm">
+                          <AlertCircle size={11} /> SHORTFALL
                         </span>
                       )}
                     </div>
 
-                    <div className="p-3.5 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-2 shadow-sm">
+                    <div className="p-2.5 sm:p-3 bg-[#F8F9FA] border border-black/5 rounded-2xl flex flex-col gap-1.5 shadow-sm">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500 font-medium">Future Monthly Burn (Age {formRetireAge}):</span>
-                        <span className="font-black text-[#1C1C1E] text-sm flex items-baseline">
-                          <span className="text-[10px] font-bold text-gray-500 relative -top-[2px] mr-0.5">$</span>
+                        <span className="text-gray-500 font-medium text-[11px]">Future Monthly Burn (Age {formRetireAge}):</span>
+                        <span className="font-black text-[#1C1C1E] text-xs sm:text-sm flex items-baseline">
+                          <span className="text-[9.5px] font-bold text-gray-500 relative -top-[1px] mr-0.5">$</span>
                           <span>{Math.round(stepSimulation.futureMonthlyExpense).toLocaleString()}</span>
-                          <span className="text-[11px] font-semibold text-gray-500 ml-0.5">/mo</span>
+                          <span className="text-[10px] font-semibold text-gray-500 ml-0.5">/mo</span>
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500 font-medium">Required Target Corpus:</span>
-                        <span className="font-black text-[#8A6414] text-base flex items-baseline">
-                          <span className="text-[11px] font-bold text-[#8A6414]/75 relative -top-[3px] mr-0.5">$</span>
+                        <span className="text-gray-500 font-medium text-[11px]">Required Target Corpus:</span>
+                        <span className="font-black text-[#8A6414] text-sm sm:text-base flex items-baseline">
+                          <span className="text-[10px] font-bold text-[#8A6414]/75 relative -top-[2px] mr-0.5">$</span>
                           <span>{Math.round(stepSimulation.requiredCorpus).toLocaleString()}</span>
                         </span>
                       </div>
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500 font-medium">Projected Nest Egg:</span>
-                        <span className={`font-black text-base flex items-baseline ${stepSimulation.isOnTrack ? 'text-[#2E7D32]' : 'text-orange-600'}`}>
-                          <span className={`text-[11px] font-bold relative -top-[3px] mr-0.5 ${stepSimulation.isOnTrack ? 'text-[#2E7D32]/75' : 'text-orange-600/75'}`}>$</span>
+                        <span className="text-gray-500 font-medium text-[11px]">Projected Nest Egg:</span>
+                        <span className={`font-black text-sm sm:text-base flex items-baseline ${stepSimulation.isOnTrack ? 'text-[#2E7D32]' : 'text-orange-600'}`}>
+                          <span className={`text-[10px] font-bold relative -top-[2px] mr-0.5 ${stepSimulation.isOnTrack ? 'text-[#2E7D32]/75' : 'text-orange-600/75'}`}>$</span>
                           <span>{Math.round(stepSimulation.projectedNestEgg).toLocaleString()}</span>
                         </span>
                       </div>
                     </div>
 
-                    <p className="text-xs text-gray-500 leading-relaxed">
+                    <p className="text-[11px] sm:text-xs text-gray-500 leading-snug">
                       {stepSimulation.isOnTrack ? (
                         "🎉 Excellent! Based on your parameters, you are projected to fully meet your retirement nest egg goal."
                       ) : (
@@ -832,14 +829,14 @@ export default function RetirementCockpit({
               </div>
 
               {/* Bottom Buttons */}
-              <div className="shrink-0 pt-2.5 border-t border-black/8 flex items-center gap-2">
+              <div className="shrink-0 pt-2 border-t border-black/8 flex items-center gap-2">
                 {step > 1 && (
                   <button
                     type="button"
                     onClick={() => setStep(s => Math.max(1, s - 1))}
-                    className="px-4 py-3 bg-white hover:bg-black/5 border border-black/10 rounded-2xl text-xs font-bold text-gray-700 flex items-center gap-1.5 active:scale-95 shadow-sm cursor-pointer transition-all"
+                    className="px-3.5 py-2.5 bg-white hover:bg-black/5 border border-black/10 rounded-xl sm:rounded-2xl text-xs font-bold text-gray-700 flex items-center gap-1 active:scale-95 shadow-sm cursor-pointer transition-all"
                   >
-                    <ChevronLeft size={16} /> Back
+                    <ChevronLeft size={15} /> Back
                   </button>
                 )}
 
@@ -847,18 +844,18 @@ export default function RetirementCockpit({
                   <button
                     type="button"
                     onClick={handleStepNext}
-                    className="flex-1 py-3 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black uppercase tracking-wider text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="flex-1 py-2.5 bg-gradient-to-r from-[#C59A3F] to-[#A37B2C] hover:from-[#A37B2C] hover:to-[#825F1D] active:scale-98 text-white font-black uppercase tracking-wider text-xs rounded-xl sm:rounded-2xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <span>Next Step</span>
-                    <ChevronRight size={16} />
+                    <ChevronRight size={15} />
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={handleApplySteps}
-                    className="flex-1 py-3 bg-[#2E7D32] hover:bg-[#1B5E20] active:scale-98 text-white font-black uppercase tracking-wider text-xs rounded-2xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="flex-1 py-2.5 bg-[#2E7D32] hover:bg-[#1B5E20] active:scale-98 text-white font-black uppercase tracking-wider text-xs rounded-xl sm:rounded-2xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <Sparkles size={16} />
+                    <Sparkles size={15} />
                     <span>Apply to Simulation</span>
                   </button>
                 )}
