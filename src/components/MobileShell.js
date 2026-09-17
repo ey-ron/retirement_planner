@@ -156,13 +156,13 @@ export default function MobileShell({
   }, []);
 
   // Dynamic CAGR & Inflation parameters synchronized with the active Monte Carlo scenario
-  // When unlock_1 is Locked (standard baseline), the calibrated 3-tier stochastic formula is used
+  // When unlock_1 is Locked (simplified rule-of-thumb baseline), simplified static parameters are used
   const scenarioParams = useMemo(() => {
     const isUnlock1Locked = unlocks?.unlock_1 !== "Unlocked";
 
     if (monteCarloScenario === "conservative") {
       return {
-        cagr: 5.5,
+        cagr: 6.0,
         inflation: 3.0,
         cagrTag: "Defensive Yield",
         inflationTag: "Low-Risk CPI"
@@ -170,16 +170,16 @@ export default function MobileShell({
     }
     if (monteCarloScenario === "chaotic") {
       return {
-        cagr: 4.5,
-        inflation: 5.5,
+        cagr: 4.0,
+        inflation: 5.0,
         cagrTag: "Crash Shock Yield",
         inflationTag: "Stagflation CPI"
       };
     }
-    // Standard baseline (historical benchmark: 7.5% CAGR, 3.0% Inflation)
+    // Standard baseline (simplified retail rule of thumb: 8.0% CAGR, 3.5% Inflation)
     return {
-      cagr: 7.5,
-      inflation: 3.0,
+      cagr: 8.0,
+      inflation: 3.5,
       cagrTag: "Expected Real Growth",
       inflationTag: "Annual Cost Drag"
     };
@@ -407,16 +407,16 @@ export default function MobileShell({
                       </span>
                       <span
                         className={`font-black flex items-center gap-1 text-[12px] sm:text-[13px] ${
-                          monteCarloScenario === "conservative"
+                          monteCarloScenario === "standard"
                             ? "text-emerald-600"
-                            : monteCarloScenario === "standard"
+                            : monteCarloScenario === "conservative"
                             ? "text-amber-600"
                             : "text-rose-600"
                         }`}
                       >
-                        {monteCarloScenario === "conservative" && "5% (95% Success Rate)"}
                         {monteCarloScenario === "standard" && "15% (85% Success Rate)"}
-                        {monteCarloScenario === "chaotic" && "42% (58% Success Rate)"}
+                        {monteCarloScenario === "conservative" && "30% (70% Success Rate)"}
+                        {monteCarloScenario === "chaotic" && "50% (50% Success Rate)"}
                       </span>
                     </div>
 
@@ -424,11 +424,11 @@ export default function MobileShell({
                     <div className="w-full h-2 bg-gray-200/80 rounded-full overflow-hidden p-0.5 flex">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ease-out ${
-                          monteCarloScenario === "conservative"
-                            ? "w-[5%] bg-emerald-500"
-                            : monteCarloScenario === "standard"
-                            ? "w-[15%] bg-amber-500"
-                            : "w-[42%] bg-rose-500"
+                          monteCarloScenario === "standard"
+                            ? "w-[15%] bg-emerald-500"
+                            : monteCarloScenario === "conservative"
+                            ? "w-[30%] bg-amber-500"
+                            : "w-[50%] bg-rose-500"
                         }`}
                       />
                     </div>
@@ -449,36 +449,36 @@ export default function MobileShell({
                           {monteCarloScenario === "chaotic" && "Chaotic Stagflation"}
                         </span>
                         <span className="text-[9.5px] sm:text-[10.5px] font-bold text-gray-500 tracking-tight">
-                          {monteCarloScenario === "conservative" && "Capital Preservation"}
-                          {monteCarloScenario === "standard" && "Benchmark"}
+                          {monteCarloScenario === "conservative" && "Lower Yield Drag"}
+                          {monteCarloScenario === "standard" && "Benchmark Growth"}
                           {monteCarloScenario === "chaotic" && "& Crash Shock"}
                         </span>
                       </div>
                     </div>
                     <div className="flex flex-col items-end justify-center leading-tight shrink-0 pl-2">
                       <span className="text-[12px] sm:text-[13px] font-black text-[#1C1C1E] tracking-tight">
-                        10,000
+                        1,000
                       </span>
                       <span className="text-[8px] sm:text-[9px] font-bold text-gray-500 uppercase tracking-wider">
-                        Simulations
+                        Baseline Runs
                       </span>
                     </div>
                   </div>
 
                   <p className="text-[10.5px] sm:text-[11.5px] text-gray-600 leading-[1.45] my-1 text-left">
-                    {monteCarloScenario === "conservative" && (
-                      <>
-                        Simulates defensive 5.5% real yields with a heavy bond tilt. Across 10,000 randomized lifespans, <strong className="text-emerald-700 font-black">95% of simulated futures</strong> safely last to age 85+ with only a minimal 5% depletion risk during adverse market conditions.
-                      </>
-                    )}
                     {monteCarloScenario === "standard" && (
                       <>
-                        Models historical 7.5% real equity returns and baseline inflation cycles. Across 10,000 randomized lifespans, <strong className="text-amber-800 font-black">85% of simulated futures</strong> comfortably sustain retirement, leaving a 15% risk buffer for unexpected market volatility.
+                        Models baseline 8.0% historical market returns and steady inflation. Across 1,000 randomized lifespans, <strong className="text-emerald-700 font-black">85% of simulated futures</strong> comfortably sustain retirement, powered by steady long-term compounding growth.
+                      </>
+                    )}
+                    {monteCarloScenario === "conservative" && (
+                      <>
+                        Simulates a defensive 6.0% lower-growth market. Slower portfolio accumulation means <strong className="text-amber-800 font-black">70% of simulated futures</strong> reach retirement safely, leaving a 30% risk gap due to lower compounding yield.
                       </>
                     )}
                     {monteCarloScenario === "chaotic" && (
                       <>
-                        Stress-tests severe early market crashes (2008-style) paired with 5%+ inflation shocks. Across 10,000 randomized lifespans, a <strong className="text-rose-700 font-black">42% early depletion risk</strong> indicates your portfolio requires sequence-of-returns protection.
+                        Stress-tests severe early market crashes (2008-style) paired with 5%+ inflation shocks. Across 1,000 randomized lifespans, a <strong className="text-rose-700 font-black">50% early depletion risk</strong> indicates your portfolio requires sequence-of-returns protection.
                       </>
                     )}
                   </p>
