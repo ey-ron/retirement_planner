@@ -41,6 +41,16 @@ export default function AuthModal({
   const [errorMsg, setErrorMsg] = useState("");
   const [storedEmail, setStoredEmail] = useState("");
 
+  const tierLabel = (() => {
+    const unlockedCount = ["unlock_1", "unlock_2", "unlock_3"].filter(
+      (id) => unlocks?.[id] === "Unlocked"
+    ).length;
+    if (unlockedCount >= 3) return "Pro";
+    if (unlockedCount === 2) return "Tier 2";
+    if (unlockedCount === 1) return "Tier 1";
+    return "Basic";
+  })();
+
   const handleUnlockClick = (def) => {
     const updatedUnlocks = { ...unlocks, [def.id]: "Unlocked" };
     if (typeof window !== "undefined") {
@@ -358,7 +368,7 @@ export default function AuthModal({
                       {proName || "Member Account"}
                     </span>
                     <span className="text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
-                      Active
+                      {tierLabel}
                     </span>
                   </div>
                   <span className="text-[10.5px] text-gray-500 truncate mt-0.5">

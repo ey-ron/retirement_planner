@@ -198,6 +198,39 @@ export default function MobileShell({
     return getCurrencySymbol(userCountry);
   }, [userCountry]);
 
+  const tierBadge = useMemo(() => {
+    const unlockedCount = ["unlock_1", "unlock_2", "unlock_3"].filter(
+      (id) => unlocks?.[id] === "Unlocked"
+    ).length;
+
+    if (unlockedCount >= 3) {
+      return {
+        label: "Pro",
+        badgeBg: "bg-gradient-to-r from-amber-50 to-emerald-50 border-amber-300 text-amber-900",
+        iconColor: "text-[#C59A3F]"
+      };
+    }
+    if (unlockedCount === 2) {
+      return {
+        label: "Tier 2",
+        badgeBg: "bg-emerald-50 border-emerald-300 text-emerald-850",
+        iconColor: "text-emerald-600"
+      };
+    }
+    if (unlockedCount === 1) {
+      return {
+        label: "Tier 1",
+        badgeBg: "bg-emerald-50 border-emerald-300 text-emerald-800",
+        iconColor: "text-emerald-600"
+      };
+    }
+    return {
+      label: "Basic",
+      badgeBg: "bg-slate-50 border-slate-300 text-slate-700",
+      iconColor: "text-slate-500"
+    };
+  }, [unlocks]);
+
   return (
     <div className="w-full h-[100dvh] max-h-[100dvh] bg-[#F2F2F7] text-[#1C1C1E] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)]">
       {/* Floating Header */}
@@ -230,10 +263,10 @@ export default function MobileShell({
             <button
               type="button"
               onClick={() => setIsAuthModalOpen(true)}
-              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 rounded-xl sm:rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-800 font-black text-[11px] sm:text-xs md:text-sm shadow-sm cursor-pointer shrink-0"
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 rounded-xl sm:rounded-2xl border font-black text-[11px] sm:text-xs md:text-sm shadow-sm cursor-pointer shrink-0 transition-all ${tierBadge.badgeBg}`}
             >
-              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 text-emerald-600" />
-              <span>Member</span>
+              <Sparkles className={`w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 ${tierBadge.iconColor}`} />
+              <span>{tierBadge.label}</span>
             </button>
           ) : (
             <button
