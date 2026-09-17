@@ -8,6 +8,7 @@ create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
   email text,
   is_pro boolean default false,
+  is_dev boolean default false,
   pro_since timestamptz,
   lemon_order_id text,
   created_at timestamptz default now(),
@@ -16,6 +17,7 @@ create table if not exists public.profiles (
 
 -- Enable Row Level Security (RLS) on profiles
 alter table public.profiles enable row level security;
+alter table public.profiles add column if not exists is_dev boolean default false;
 
 -- Profiles Policies
 create policy "Users can view own profile"
@@ -62,6 +64,7 @@ create table if not exists public.pro_licenses (
   email text unique not null,
   name text,
   is_pro boolean default true,
+  is_dev boolean default false,
   lemon_order_id text,
   country text default 'Singapore',
   -- 7 Unlockable Feature Placeholders (values: 'Unlocked' or 'Locked')
@@ -77,6 +80,7 @@ create table if not exists public.pro_licenses (
 );
 
 -- Ensure new columns are added if pro_licenses table already existed earlier
+alter table public.pro_licenses add column if not exists is_dev boolean default false;
 alter table public.pro_licenses add column if not exists country text default 'Singapore';
 alter table public.pro_licenses add column if not exists unlock_1 text default 'Locked';
 alter table public.pro_licenses alter column unlock_1 set default 'Locked';
@@ -101,6 +105,7 @@ create table if not exists public.user_retirement_plans (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.pro_licenses(id) on delete cascade,
   email text not null,
+  is_dev boolean default false,
   
   -- Plan Input Columns
   birth_date date not null default '1995-01-01',
@@ -128,6 +133,9 @@ create table if not exists public.user_retirement_plans (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- Ensure is_dev column exists on user_retirement_plans
+alter table public.user_retirement_plans add column if not exists is_dev boolean default false;
 
 -- Indexes for lightning-fast lookups
 create index if not exists idx_user_retirement_plans_user_id on public.user_retirement_plans(user_id);

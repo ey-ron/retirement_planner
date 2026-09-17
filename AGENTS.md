@@ -53,6 +53,13 @@
 - **Always Allowed Commands**:
   - `node -e` commands are ALWAYS allowed to be run autonomously at any time without requiring user confirmation. Use them freely for inline calculations, quick evaluations, mathematical verification, and test scripts.
 
+## Database, Data Protection & Dev Accounts Guardrails
+- **Dev Account Isolation (`is_dev = true`)**:
+  - Supabase tables (`profiles`, `pro_licenses`, `user_retirement_plans`) include an `is_dev` boolean flag (default `false`).
+  - **STRICT PROHIBITION**: NEVER use, alter, overwrite, mutate, or delete any non-dev accounts or records (`is_dev = false` / production customer records).
+  - All automated tests, local debugging, mock logins, trial calculations, and sandbox scripts MUST strictly operate on accounts explicitly flagged with `is_dev = true`.
+
 ## Interaction & Output Rules
 - **Token Usage Reporting**:
   - On every response moving forward, always provide a token count summary (Prompt Tokens, Response Tokens, and Total Tokens for the turn).
+
