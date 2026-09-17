@@ -2,12 +2,18 @@ import React, { useState, useEffect, useMemo } from "react";
 import RetirementCockpit from "./RetirementCockpit";
 import PartnerAdBanner from "./PartnerAdBanner";
 import AuthModal from "./AuthModal";
-import { Sparkles, LogIn, Sliders, CheckCircle2, RotateCcw, Lock, ShieldCheck, Info, TrendingUp, Flame } from "lucide-react";
+import { Sparkles, LogIn, Sliders, CheckCircle2, RotateCcw, Lock, ShieldCheck, Info, TrendingUp, Flame, X } from "lucide-react";
 import {
   computeSimulationMetrics,
   formatAbbreviatedNumber,
   formatAbbreviatedParts,
-  getCurrencySymbol
+  getCurrencySymbol,
+  getCountryInfo,
+  computeUniversalInflation,
+  computeMultiAssetPortfolio,
+  getScenarioExplanationRows,
+  getScenarioExplanationText,
+  INSTITUTIONAL_ASSETS
 } from "../lib/retirementCalculations";
 
 // Clean, perfectly calibrated CurrencyDisplay component
@@ -155,35 +161,77 @@ export default function MobileShell({
     };
   }, []);
 
-  // Dynamic CAGR & Inflation parameters synchronized with the active Monte Carlo scenario
-  // When unlock_1 is Locked (simplified rule-of-thumb baseline), simplified static parameters are used
-  const scenarioParams = useMemo(() => {
-    const isUnlock1Locked = unlocks?.unlock_1 !== "Unlocked";
+  const [liveInflationRate, setLiveInflationRate] = useState(null);
+  const [activeDerivationModal, setActiveDerivationModal] = useState(null); // 'cagr' | 'inflation' | null
 
-    if (monteCarloScenario === "conservative") {
-      return {
-        cagr: 6.0,
-        inflation: 3.0,
-        cagrTag: "Defensive Yield",
-        inflationTag: "Low-Risk CPI"
-      };
+  // Fetch live territory-specific inflation rate from World Bank API when unlocked
+  useEffect(() => {
+    const isTerritoryUnlocked = unlocks?.unlock_2 === "Unlocked";
+    if (isTerritoryUnlocked && userCountry) {
+      const countryInfo = getCountryInfo(userCountry);
+      setLiveInflationRate(countryInfo.defaultInflation);
+
+      fetch(`/api/market/inflation?country=${encodeURIComponent(userCountry)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.success && typeof data.inflation === "number") {
+            setLiveInflationRate(data.inflation);
+          }
+        })
+        .catch(() => {});
     }
-    if (monteCarloScenario === "chaotic") {
-      return {
-        cagr: 4.0,
-        inflation: 5.0,
-        cagrTag: "Crash Shock Yield",
-        inflationTag: "Stagflation CPI"
-      };
+  }, [userCountry, unlocks?.unlock_2]);
+
+  // Dynamic CAGR & Inflation parameters synchronized with the active Monte Carlo scenario
+  // Decoupled, universally binding inflation and multi-asset covariance drag
+  const scenarioParams = useMemo(() => {
+    const isTerritoryUnlocked = unlocks?.unlock_2 === "Unlocked";
+    const isCagrUnlocked = unlocks?.unlock_3 === "Unlocked";
+    const countryInfo = getCountryInfo(userCountry);
+    const wbInflation = typeof liveInflationRate === "number" ? liveInflationRate : countryInfo.defaultInflation;
+
+    // Item 3: Universal Inflation Spread Binding: pi_effective(s) = pi_base + delta_pi(s)
+    const universalInf = computeUniversalInflation(monteCarloScenario, isTerritoryUnlocked, wbInflation);
+
+    // Item 2: Multi-Asset Growth Formula with Covariance Drag (unlock_3)
+    let cagrValue = 8.0;
+    let cagrTag = "Expected Real Growth";
+
+    if (isCagrUnlocked) {
+      const multiAsset = computeMultiAssetPortfolio([0.60, 0.25, 0.10, 0.05], monteCarloScenario);
+      cagrValue = multiAsset.cagrPercent;
+      cagrTag = monteCarloScenario === "conservative"
+        ? "Defensive Asset Drag"
+        : (monteCarloScenario === "chaotic" ? "Crash Shock Yield" : "Multi-Asset Covariance Drag");
+    } else {
+      if (monteCarloScenario === "conservative") {
+        cagrValue = 6.0;
+        cagrTag = "Defensive Yield";
+      } else if (monteCarloScenario === "chaotic") {
+        cagrValue = 4.0;
+        cagrTag = "Crash Shock Yield";
+      } else {
+        cagrValue = 8.0;
+        cagrTag = "Benchmark 8.0% Yield";
+      }
     }
-    // Standard baseline (simplified retail rule of thumb: 8.0% CAGR, 3.5% Inflation)
+
+    const inflationTag = isTerritoryUnlocked
+      ? "10-Year Historical Drag"
+      : (monteCarloScenario === "conservative"
+        ? "Prudent Cost Buffer"
+        : (monteCarloScenario === "chaotic" ? "Stagflation CPI" : "Annual Cost Drag"));
+
     return {
-      cagr: 8.0,
-      inflation: 3.5,
-      cagrTag: "Expected Real Growth",
-      inflationTag: "Annual Cost Drag"
+      cagr: cagrValue,
+      inflation: universalInf.effectivePercent,
+      cagrTag,
+      inflationTag,
+      territoryTag: isTerritoryUnlocked ? `Territory: ${countryInfo.name}` : null,
+      isCagrUnlocked,
+      isTerritoryUnlocked
     };
-  }, [monteCarloScenario, unlocks?.unlock_1]);
+  }, [monteCarloScenario, unlocks?.unlock_2, unlocks?.unlock_3, userCountry, liveInflationRate]);
 
   // Compute metrics for the Member Hero Card dynamically based on the active Monte Carlo scenario
   const memberMetrics = useMemo(() => {
@@ -193,6 +241,14 @@ export default function MobileShell({
       inflation: scenarioParams.inflation
     });
   }, [simulationData, scenarioParams]);
+
+  // Compute impactful scenario explanation reflecting on-track or warning risk state
+  const explanationText = useMemo(() => {
+    return getScenarioExplanationText({
+      scenario: monteCarloScenario,
+      isOnTrack: memberMetrics.isOnTrack
+    });
+  }, [monteCarloScenario, memberMetrics.isOnTrack]);
 
   const currencySymbol = useMemo(() => {
     return getCurrencySymbol(userCountry);
@@ -490,39 +546,21 @@ export default function MobileShell({
                     </div>
                     <div className="flex flex-col items-end justify-center leading-tight shrink-0 pl-2">
                       <span className="text-[12px] sm:text-[13px] font-black text-[#1C1C1E] tracking-tight">
-                        1,000
+                        {unlocks?.unlock_1 === "Unlocked" ? "10,000" : "1,000"}
                       </span>
                       <span className="text-[8px] sm:text-[9px] font-bold text-gray-500 uppercase tracking-wider">
-                        Baseline Runs
+                        {unlocks?.unlock_1 === "Unlocked" ? "Simulations" : "Baseline Runs"}
                       </span>
                     </div>
                   </div>
 
-                  <p className="text-[10.5px] sm:text-[11.5px] text-gray-600 leading-[1.45] my-1 text-left">
-                    {monteCarloScenario === "standard" && (
-                      <>
-                        Models baseline 8.0% historical market returns and steady inflation. Across 1,000 randomized lifespans, <strong className="text-emerald-700 font-black">85% of simulated futures</strong> comfortably sustain retirement, powered by steady long-term compounding growth.
-                      </>
-                    )}
-                    {monteCarloScenario === "conservative" && (
-                      <>
-                        Simulates a defensive 6.0% lower-growth market. Slower portfolio accumulation means <strong className="text-amber-800 font-black">70% of simulated futures</strong> reach retirement safely, leaving a 30% risk gap due to lower compounding yield.
-                      </>
-                    )}
-                    {monteCarloScenario === "chaotic" && (
-                      <>
-                        Stress-tests severe early market crashes (2008-style) paired with 5%+ inflation shocks. Across 1,000 randomized lifespans, a <strong className="text-rose-700 font-black">50% early depletion risk</strong> indicates your portfolio requires sequence-of-returns protection.
-                      </>
-                    )}
+                  {/* Impactful Scenario Assessment (On Track vs Risk Warning) */}
+                  <p className="min-h-[72px] sm:min-h-[78px] text-[10.5px] sm:text-[11.5px] text-gray-700 leading-[17.5px] sm:leading-[19px] my-1 text-left font-normal">
+                    {explanationText}
                   </p>
 
-                  {/* Unlock Professional Standard Clickable Label / Active Status */}
-                  {unlocks?.unlock_1 === "Unlocked" ? (
-                    <div className="w-full pt-2 border-t border-emerald-500/20 flex items-center justify-center gap-1.5 text-[10.5px] sm:text-[11.5px] font-black text-emerald-700 select-none truncate shrink-0">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span className="truncate">Professional Institutional Standard Active</span>
-                    </div>
-                  ) : (
+                  {/* Unlock Professional Standard Clickable CTA (Hidden when already unlocked) */}
+                  {unlocks?.unlock_1 !== "Unlocked" && (
                     <button
                       type="button"
                       onClick={() => setIsAuthModalOpen(true)}
@@ -537,11 +575,26 @@ export default function MobileShell({
                 </div>
               </div>
 
-              {/* 3. Side-by-Side Metric Cards: CAGR & Inflation Rate (Decreased by 4px) */}
+              {/* 3. Side-by-Side Metric Cards: CAGR & Inflation Rate */}
               <div className="w-full grid grid-cols-2 gap-2.5 sm:gap-3.5 mt-2 shrink-0 select-none">
-                {/* Left Card: CAGR */}
-                <div className="bg-white/90 backdrop-blur-xl border border-black/8 rounded-2xl sm:rounded-3xl py-1.5 sm:py-2 px-3 sm:px-3.5 shadow-sm flex flex-col justify-between">
-                  <div>
+                {/* Left Card: CAGR (Clickable when Unlocked) */}
+                <div
+                  onClick={() => {
+                    if (scenarioParams.isCagrUnlocked) {
+                      setActiveDerivationModal("cagr");
+                    }
+                  }}
+                  className={`bg-white/90 backdrop-blur-xl border ${
+                    scenarioParams.isCagrUnlocked
+                      ? "border-amber-500/25 hover:border-amber-500/50 cursor-pointer active:scale-95 shadow-sm hover:shadow-md"
+                      : "border-black/8"
+                  } rounded-2xl sm:rounded-3xl ${
+                    unlocks?.unlock_1 === "Unlocked"
+                      ? "min-h-[88px] sm:min-h-[96px] py-2 sm:py-2.5"
+                      : "min-h-[80px] sm:min-h-[88px] py-1.5 sm:py-2"
+                  } px-3 sm:px-3.5 shadow-sm flex flex-col justify-between transition-all`}
+                >
+                  <div className="h-full flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-0.5">
                       <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.14em] text-[#8A6414]">
                         CAGR Return
@@ -552,35 +605,55 @@ export default function MobileShell({
                     </div>
 
                     <div className="flex items-baseline gap-0.5 my-0.5">
-                      <span className="text-[20px] sm:text-[24px] font-black text-[#1C1C1E] tracking-tight leading-none">
+                      <span className="text-[21px] sm:text-[24px] font-black text-[#1C1C1E] tracking-tight leading-none">
                         {scenarioParams.cagr.toFixed(1)}
                       </span>
-                      <span className="text-[12px] sm:text-[14px] font-black text-[#8A6414] leading-none">
+                      <span className="text-[12.5px] sm:text-[14px] font-black text-[#8A6414] leading-none">
                         %
                       </span>
                     </div>
 
-                    <span className="text-[8.5px] sm:text-[9.5px] font-bold text-gray-500 block truncate">
+                    <span className="text-[8.5px] sm:text-[9.5px] font-bold text-gray-500 block truncate leading-tight">
                       {scenarioParams.cagrTag}
                     </span>
                   </div>
 
-                  {/* Unlock Weighted Growth Callout */}
-                  <button
-                    type="button"
-                    onClick={() => setIsAuthModalOpen(true)}
-                    className="pt-1 mt-1 border-t border-black/5 flex items-center justify-center gap-1 text-[8.5px] sm:text-[9px] font-black text-[#8A6414] hover:text-[#684b0f] transition-colors cursor-pointer select-none truncate group"
-                  >
-                    <Sparkles className="w-2.5 h-2.5 text-[#8A6414] shrink-0 group-hover:rotate-12 transition-transform" />
-                    <span className="hover:underline underline-offset-2 truncate">
-                      Unlock Weighted Growth →
-                    </span>
-                  </button>
+                  {/* Unlock Weighted Growth Callout (Hidden when unlocked) */}
+                  {!scenarioParams.isCagrUnlocked && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsAuthModalOpen(true);
+                      }}
+                      className="pt-1 mt-1 border-t border-black/5 flex items-center justify-center gap-1 text-[8.5px] sm:text-[9px] font-black text-[#8A6414] hover:text-[#684b0f] transition-colors cursor-pointer select-none truncate group"
+                    >
+                      <Sparkles className="w-2.5 h-2.5 text-[#8A6414] shrink-0 group-hover:rotate-12 transition-transform" />
+                      <span className="hover:underline underline-offset-2 truncate">
+                        Unlock Weighted Growth →
+                      </span>
+                    </button>
+                  )}
                 </div>
 
-                {/* Right Card: Inflation Rate */}
-                <div className="bg-white/90 backdrop-blur-xl border border-black/8 rounded-2xl sm:rounded-3xl py-1.5 sm:py-2 px-3 sm:px-3.5 shadow-sm flex flex-col justify-between">
-                  <div>
+                {/* Right Card: Inflation Rate (Clickable when Unlocked) */}
+                <div
+                  onClick={() => {
+                    if (scenarioParams.isTerritoryUnlocked) {
+                      setActiveDerivationModal("inflation");
+                    }
+                  }}
+                  className={`bg-white/90 backdrop-blur-xl border ${
+                    scenarioParams.isTerritoryUnlocked
+                      ? "border-amber-500/25 hover:border-amber-500/50 cursor-pointer active:scale-95 shadow-sm hover:shadow-md"
+                      : "border-black/8"
+                  } rounded-2xl sm:rounded-3xl ${
+                    unlocks?.unlock_1 === "Unlocked"
+                      ? "min-h-[88px] sm:min-h-[96px] py-2 sm:py-2.5"
+                      : "min-h-[80px] sm:min-h-[88px] py-1.5 sm:py-2"
+                  } px-3 sm:px-3.5 shadow-sm flex flex-col justify-between transition-all`}
+                >
+                  <div className="h-full flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-0.5">
                       <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.14em] text-[#8A6414]">
                         Inflation Rate
@@ -591,30 +664,42 @@ export default function MobileShell({
                     </div>
 
                     <div className="flex items-baseline gap-0.5 my-0.5">
-                      <span className="text-[20px] sm:text-[24px] font-black text-[#1C1C1E] tracking-tight leading-none">
+                      <span className="text-[21px] sm:text-[24px] font-black text-[#1C1C1E] tracking-tight leading-none">
                         {scenarioParams.inflation.toFixed(1)}
                       </span>
-                      <span className="text-[12px] sm:text-[14px] font-black text-[#8A6414] leading-none">
+                      <span className="text-[12.5px] sm:text-[14px] font-black text-[#8A6414] leading-none">
                         %
                       </span>
                     </div>
 
-                    <span className="text-[8.5px] sm:text-[9.5px] font-bold text-gray-500 block truncate">
-                      {scenarioParams.inflationTag}
-                    </span>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      {scenarioParams.territoryTag && (
+                        <span className="text-[8.5px] sm:text-[9.5px] font-bold text-[#8A6414] truncate block leading-tight">
+                          {scenarioParams.territoryTag}
+                        </span>
+                      )}
+                      <span className="text-[8px] sm:text-[9px] font-bold text-gray-500 block truncate leading-tight">
+                        {scenarioParams.inflationTag}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Unlock Territory Based Callout */}
-                  <button
-                    type="button"
-                    onClick={() => setIsAuthModalOpen(true)}
-                    className="pt-1 mt-1 border-t border-black/5 flex items-center justify-center gap-1 text-[8.5px] sm:text-[9px] font-black text-[#8A6414] hover:text-[#684b0f] transition-colors cursor-pointer select-none truncate group"
-                  >
-                    <Sparkles className="w-2.5 h-2.5 text-[#8A6414] shrink-0 group-hover:rotate-12 transition-transform" />
-                    <span className="hover:underline underline-offset-2 truncate">
-                      Unlock Territory Based →
-                    </span>
-                  </button>
+                  {/* Unlock Territory Based Callout (Hidden when unlocked) */}
+                  {!scenarioParams.isTerritoryUnlocked && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsAuthModalOpen(true);
+                      }}
+                      className="pt-1 mt-1 border-t border-black/5 flex items-center justify-center gap-1 text-[8.5px] sm:text-[9px] font-black text-[#8A6414] hover:text-[#684b0f] transition-colors cursor-pointer select-none truncate group"
+                    >
+                      <Sparkles className="w-2.5 h-2.5 text-[#8A6414] shrink-0 group-hover:rotate-12 transition-transform" />
+                      <span className="hover:underline underline-offset-2 truncate">
+                        Unlock Territory Based →
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -628,6 +713,189 @@ export default function MobileShell({
           />
         )}
       </main>
+
+      {/* Vertically Centered 3/4-Screen Explanation Modal for Unlocked CAGR & Inflation */}
+      {activeDerivationModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-modal-backdrop"
+          onClick={() => setActiveDerivationModal(null)}
+        >
+          <div
+            className="w-[94%] sm:w-[85%] max-w-sm max-h-[72vh] overflow-y-auto no-scrollbar bg-white rounded-3xl p-4 sm:p-5 shadow-2xl border border-black/10 flex flex-col justify-between text-left select-none animate-modal-pop"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {activeDerivationModal === "cagr" && (
+              <div>
+                {/* Modal Header */}
+                <div className="flex items-start justify-between pb-2 mb-2 border-b border-black/5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-[#8A6414] border border-amber-500/20 shrink-0">
+                      <TrendingUp className="w-4 h-4 stroke-[2.5]" />
+                    </div>
+                    <div className="leading-tight">
+                      <h3 className="text-xs sm:text-sm font-black text-[#1C1C1E]">
+                        Weighted Growth CAGR
+                      </h3>
+                      <p className="text-[9.5px] sm:text-[10.5px] font-bold text-[#8A6414]">
+                        Institutional Covariance Drag Derivation
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDerivationModal(null)}
+                    className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Body Content */}
+                <div className="space-y-2 text-left text-gray-700">
+                  <p className="text-[10px] sm:text-[11px] leading-snug text-gray-800">
+                    Compound annual growth models real geometric accumulation over 20–40 years, rigorously accounting for <strong>volatility drag</strong> that erodes multi-decade wealth.
+                  </p>
+
+                  {/* Mathematical Formulation */}
+                  <div className="bg-[#F8F8FA] border border-black/5 rounded-xl p-2 sm:p-2.5">
+                    <div className="font-mono text-[10.5px] sm:text-[11.5px] text-gray-900 bg-white py-1 px-2 rounded-lg border border-black/5 overflow-x-auto text-center font-black">
+                      R_portfolio ≈ wᵀμ - ½ wᵀΣw
+                    </div>
+                    <p className="text-[9px] sm:text-[9.5px] text-gray-500 mt-1 leading-tight">
+                      <strong>wᵀμ</strong> is arithmetic expected return ({scenarioParams.cagr.toFixed(1)}%), minus covariance drag (-0.58%) deducted to project true geometric growth.
+                    </p>
+                  </div>
+
+                  {/* Multi-Asset Asset Allocation Breakdown */}
+                  <div className="space-y-1">
+                    {INSTITUTIONAL_ASSETS.map((asset, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-[9.5px] sm:text-[10.5px] bg-gray-50 px-2 py-0.5 rounded-lg border border-black/5">
+                        <span className="font-bold text-gray-800 truncate pr-2">{asset.name}</span>
+                        <span className="font-mono font-black text-[#8A6414] shrink-0">
+                          {(asset.defaultWeight * 100).toFixed(0)}% (μ: {(asset.mu * 100).toFixed(1)}%)
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Telemetry Summary */}
+                  <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-2 flex items-center justify-between">
+                    <div>
+                      <span className="text-[8.5px] font-bold text-gray-500 block uppercase tracking-wider">
+                        Realized Compound CAGR
+                      </span>
+                      <span className="text-[16px] sm:text-[18px] font-black text-[#1C1C1E] leading-none">
+                        {scenarioParams.cagr.toFixed(1)}% / yr
+                      </span>
+                    </div>
+                    <span className="text-[8px] sm:text-[8.5px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Drag Deducted
+                    </span>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="pt-2 mt-2 border-t border-black/5 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setActiveDerivationModal(null)}
+                    className="w-full py-2 rounded-xl bg-[#1C1C1E] text-white text-xs font-black hover:bg-black transition-colors cursor-pointer"
+                  >
+                    Close Derivation
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeDerivationModal === "inflation" && (
+              <div>
+                {/* Modal Header */}
+                <div className="flex items-start justify-between pb-2 mb-2 border-b border-black/5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-[#8A6414] border border-amber-500/20 shrink-0">
+                      <Flame className="w-4 h-4 stroke-[2.5]" />
+                    </div>
+                    <div className="leading-tight">
+                      <h3 className="text-xs sm:text-sm font-black text-[#1C1C1E]">
+                        Territory Inflation Rate
+                      </h3>
+                      <p className="text-[9.5px] sm:text-[10.5px] font-bold text-[#8A6414]">
+                        World Bank 10-Year Rolling Compound CPI
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveDerivationModal(null)}
+                    className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Body Content */}
+                <div className="space-y-2 text-left text-gray-700">
+                  <p className="text-[10px] sm:text-[11px] leading-snug text-gray-800">
+                    Represents purchasing power erosion for <strong>{userCountry}</strong>. Living costs compound in nominal dollars independently of market drawdowns.
+                  </p>
+
+                  {/* Universal Formula */}
+                  <div className="bg-[#F8F8FA] border border-black/5 rounded-xl p-2 sm:p-2.5">
+                    <div className="font-mono text-[10.5px] sm:text-[11.5px] text-gray-900 bg-white py-1 px-2 rounded-lg border border-black/5 overflow-x-auto text-center font-black">
+                      π_effective(s) = π_base + Δπ(s)
+                    </div>
+                    <div className="mt-1.5 space-y-0.5 text-[9.5px] text-gray-600">
+                      <div className="flex justify-between">
+                        <span>World Bank 10-Yr (π_base):</span>
+                        <strong className="font-mono text-gray-900">{(liveInflationRate ?? getCountryInfo(userCountry).defaultInflation).toFixed(1)}%</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Scenario Spread (Δπ):</span>
+                        <strong className="font-mono text-[#8A6414]">
+                          {monteCarloScenario === "chaotic" ? "+2.5% (Chaotic)" : (monteCarloScenario === "conservative" ? "+0.7% (Conservative)" : "+0.0% (Standard)")}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Why 10-Year Rolling Mean */}
+                  <div className="p-2 bg-amber-500/5 rounded-xl border border-amber-500/15">
+                    <p className="text-[9px] sm:text-[9.5px] text-gray-700 leading-snug">
+                      Single-year CPI spot data fluctuates erratically. Projections spanning 30+ years require a 10-year rolling compound average to avoid underfunding living costs.
+                    </p>
+                  </div>
+
+                  {/* Telemetry Summary */}
+                  <div className="bg-white border border-black/10 rounded-xl p-2 flex items-center justify-between shadow-sm">
+                    <div>
+                      <span className="text-[8.5px] font-bold text-gray-500 block uppercase tracking-wider">
+                        Effective Annual Cost Drag
+                      </span>
+                      <span className="text-[16px] sm:text-[18px] font-black text-[#1C1C1E] leading-none">
+                        {scenarioParams.inflation.toFixed(1)}% / yr
+                      </span>
+                    </div>
+                    <span className="text-[8px] sm:text-[8.5px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-[#8A6414] border border-amber-200">
+                      Live Regional Feed
+                    </span>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="pt-2 mt-2 border-t border-black/5 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setActiveDerivationModal(null)}
+                    className="w-full py-2 rounded-xl bg-[#1C1C1E] text-white text-xs font-black hover:bg-black transition-colors cursor-pointer"
+                  >
+                    Close Derivation
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Auth Modal (Log In primary, Register secondary with Country Dropdown) */}
       <AuthModal

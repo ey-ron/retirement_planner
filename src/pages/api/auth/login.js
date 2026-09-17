@@ -61,21 +61,35 @@ export default async function handler(req, res) {
           console.warn("[Login API] user_retirement_plans lookup notice:", planErr.message);
         }
 
+        const isDev = Boolean(license.is_dev);
+        const resolvedUnlocks = isDev
+          ? {
+              unlock_1: "Unlocked",
+              unlock_2: "Unlocked",
+              unlock_3: "Unlocked",
+              unlock_4: "Unlocked",
+              unlock_5: "Unlocked",
+              unlock_6: "Unlocked",
+              unlock_7: "Unlocked"
+            }
+          : {
+              unlock_1: license.unlock_1 || "Locked",
+              unlock_2: license.unlock_2 || "Locked",
+              unlock_3: license.unlock_3 || "Locked",
+              unlock_4: license.unlock_4 || "Locked",
+              unlock_5: license.unlock_5 || "Locked",
+              unlock_6: license.unlock_6 || "Locked",
+              unlock_7: license.unlock_7 || "Locked"
+            };
+
         return res.status(200).json({
           success: true,
           email: license.email,
           name: license.name || "",
           country: license.country || "Singapore",
+          isDev,
           planData: loadedPlan,
-          unlocks: {
-            unlock_1: license.unlock_1 || "Locked",
-            unlock_2: license.unlock_2 || "Locked",
-            unlock_3: license.unlock_3 || "Locked",
-            unlock_4: license.unlock_4 || "Locked",
-            unlock_5: license.unlock_5 || "Locked",
-            unlock_6: license.unlock_6 || "Locked",
-            unlock_7: license.unlock_7 || "Locked"
-          },
+          unlocks: resolvedUnlocks,
           message: "Login successful!"
         });
       }
