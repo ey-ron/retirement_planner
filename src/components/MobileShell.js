@@ -226,6 +226,7 @@ export default function MobileShell({
       cagr: cagrValue,
       inflation: universalInf.effectivePercent,
       cagrTag,
+      allocationTag: isCagrUnlocked ? "Model: Institutional" : null,
       inflationTag,
       territoryTag: isTerritoryUnlocked ? `Territory: ${countryInfo.name}` : null,
       isCagrUnlocked,
@@ -613,9 +614,16 @@ export default function MobileShell({
                       </span>
                     </div>
 
-                    <span className="text-[8.5px] sm:text-[9.5px] font-bold text-gray-500 block truncate leading-tight">
-                      {scenarioParams.cagrTag}
-                    </span>
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      {scenarioParams.allocationTag && (
+                        <span className="text-[8.5px] sm:text-[9.5px] font-bold text-[#8A6414] truncate block leading-tight">
+                          {scenarioParams.allocationTag}
+                        </span>
+                      )}
+                      <span className="text-[8px] sm:text-[9px] font-bold text-gray-500 block truncate leading-tight">
+                        {scenarioParams.cagrTag}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Unlock Weighted Growth Callout (Hidden when unlocked) */}
