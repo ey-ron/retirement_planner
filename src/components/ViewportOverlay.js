@@ -43,10 +43,22 @@ function getTier(w, h) {
 export default function ViewportOverlay() {
   const [dimensions, setDimensions] = useState(null);
   const [browserName, setBrowserName] = useState("");
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    // Strictly hidden in production unless on localhost or with ?debug_tier=1 query param
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const hasDebugParam = new URLSearchParams(window.location.search).has("debug_tier");
+    const isDevEnv = process.env.NODE_ENV === "development";
+
+    if (!isDevEnv && !isLocal && !hasDebugParam) {
+      setIsVisible(false);
+      return;
+    }
+
+    setIsVisible(true);
     setBrowserName(detectBrowser());
 
     const updateSize = () => {
@@ -72,7 +84,7 @@ export default function ViewportOverlay() {
     };
   }, []);
 
-  if (!dimensions) return null;
+  if (!isVisible || !dimensions) return null;
 
   const currentTier = getTier(dimensions.w, dimensions.h);
 
