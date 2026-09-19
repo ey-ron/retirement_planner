@@ -230,6 +230,16 @@ export default function SplashScreen({ onComplete }) {
         </div>
 
       </div>
+
+      {/* Bottom Footnote */}
+      <div className="absolute bottom-5 sm:bottom-7 inset-x-0 flex flex-col items-center text-center px-4 gap-0.5 opacity-0 anim-text pointer-events-none">
+        <p className="text-[10px] sm:text-[10.5px] font-medium text-gray-400 tracking-wide">
+          © {new Date().getFullYear()} All rights reserved
+        </p>
+        <p className="text-[9.5px] sm:text-[10px] font-medium text-gray-400/90 tracking-wide">
+          Developed by <span className="font-semibold text-gray-600">Aaron Serrano</span>
+        </p>
+      </div>
     </div>
   );
 }

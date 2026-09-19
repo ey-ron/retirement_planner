@@ -433,6 +433,21 @@ export default function AuthModal({
               <LogOut size={13} />
               <span>Sign Out / Switch Account</span>
             </button>
+
+            {/* Developer Footnote */}
+            <div className="mt-2.5 pt-2 border-t border-black/5 text-center shrink-0">
+              <p className="text-[10px] sm:text-[10.5px] text-gray-400 font-medium">
+                Developer:{" "}
+                <a
+                  href="https://aaronserrano.vercel.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-gray-600 hover:text-[#8A6414] hover:underline underline-offset-2 transition-colors inline-flex items-center gap-0.5"
+                >
+                  aaronserrano.vercel.app
+                </a>
+              </p>
+            </div>
           </div>
         ) : (
           /* Auth Form: Tabbed Log In (Default) & Register */
