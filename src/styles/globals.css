@@ -434,6 +434,19 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   }
 }
 
+@keyframes modalBackdropFadeOut {
+  from {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  to {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+}
+
 @keyframes modalSpringPop {
   0% {
     opacity: 0;
@@ -449,12 +462,36 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   }
 }
 
+@keyframes modalSpringPopOut {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.02) translateY(-2px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.88) translateY(18px);
+  }
+}
+
 .animate-modal-backdrop {
   animation: modalBackdropFadeIn 260ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+.animate-modal-backdrop-out {
+  animation: modalBackdropFadeOut 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 .animate-modal-pop {
   animation: modalSpringPop 340ms cubic-bezier(0.175, 0.885, 0.32, 1.15) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-modal-pop-out {
+  animation: modalSpringPopOut 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, opacity;
 }
 
@@ -469,4 +506,438 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .no-scrollbar {
   -ms-overflow-style: none !important;  /* IE and Edge */
   scrollbar-width: none !important;  /* Firefox */
+}
+
+/* ==========================================================================
+   6-TIER ADAPTIVE VIEWPORT SCALING (STRICTLY NON-SCROLLABLE 100DVH)
+   ========================================================================== */
+
+/* Tier 1: Ultra-Compact iPhone (e.g. iPhone SE 375x667, w<=375 & h<=670) */
+@media (max-width: 375px) and (max-height: 670px) {
+  /* 1. Header: +2px height (56px) & +1px font size (14.5px) */
+  .app-header {
+    height: 56px !important;
+    padding-left: 0.625rem !important;
+    padding-right: 0.625rem !important;
+  }
+  .app-header-icon {
+    width: 1.75rem !important;
+    height: 1.75rem !important;
+  }
+  .app-header-title {
+    font-size: 14.5px !important;
+  }
+  /* 2. Hero Card: +2px height padding & +1px font size (corpus 28px, panel 11.5px) */
+  .app-hero {
+    padding: 0.6875rem 0.75rem !important;
+  }
+  .app-hero-corpus {
+    font-size: 28px !important;
+  }
+  .app-hero-panel {
+    padding: 0.5rem 0.625rem !important;
+    gap: 0.25rem !important;
+  }
+  .app-hero-panel-row {
+    font-size: 11.5px !important;
+  }
+  /* 4. Monte Carlo Card: +2px font size */
+  .app-mc-container {
+    padding-top: 1rem !important;
+    padding-bottom: 0.25rem !important;
+  }
+  .app-mc-main-header {
+    font-size: 10.5px !important;
+    margin-top: 6px !important;
+  }
+  .app-mc-tab-btn {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+    font-size: 11.5px !important;
+  }
+  .app-mc-risk-text {
+    font-size: 11.5px !important;
+  }
+  .app-mc-risk-pct {
+    font-size: 12.5px !important;
+  }
+  .app-mc-scenario-title {
+    font-size: 12px !important;
+  }
+  .app-mc-scenario-sub {
+    font-size: 9.5px !important;
+  }
+  .app-mc-content-box {
+    padding: 0.375rem 0.5rem !important;
+  }
+  .app-mc-explanation {
+    font-size: 13px !important;
+    line-height: 17.5px !important;
+    min-height: 56px !important;
+  }
+  /* 3. CAGR and Inflation Cards: +2px height (74px) & +1px font size (value 18px, tags 8.5px/8px) */
+  .app-metric-card {
+    min-height: 74px !important;
+    padding: 0.4375rem 0.5625rem !important;
+  }
+  .app-metric-value {
+    font-size: 18px !important;
+  }
+  .app-metric-tag-1 {
+    font-size: 8.5px !important;
+  }
+  .app-metric-tag-2 {
+    font-size: 8px !important;
+  }
+  .app-ad-banner {
+    height: 42px !important;
+  }
+}
+
+/* Tier 2: Standard Modern iPhone (e.g. iPhone 15 Pro 393x655, w>375 & h<=670) */
+@media (min-width: 376px) and (max-height: 670px) {
+  .app-header {
+    height: 60px !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  .app-header-icon {
+    width: 1.875rem !important;
+    height: 1.875rem !important;
+  }
+  .app-header-title {
+    font-size: 16.5px !important;
+  }
+  .app-hero {
+    padding: 0.625rem 0.75rem !important;
+  }
+  .app-hero-corpus {
+    font-size: 28px !important;
+  }
+  .app-hero-panel {
+    padding: 0.375rem 0.5rem !important;
+    gap: 0.25rem !important;
+  }
+  .app-hero-panel-row {
+    font-size: 10px !important;
+  }
+  .app-mc-container {
+    padding-top: 1.125rem !important;
+    padding-bottom: 0.375rem !important;
+  }
+  .app-mc-main-header {
+    font-size: 10.5px !important;
+  }
+  .app-mc-tab-btn {
+    padding-top: 0.3125rem !important;
+    padding-bottom: 0.3125rem !important;
+    font-size: 12px !important;
+  }
+  .app-mc-risk-text {
+    font-size: 11px !important;
+  }
+  .app-mc-risk-pct {
+    font-size: 13px !important;
+  }
+  .app-mc-scenario-title {
+    font-size: 12.5px !important;
+  }
+  .app-mc-scenario-sub {
+    font-size: 10px !important;
+  }
+  .app-mc-content-box {
+    padding: 0.5rem 0.625rem !important;
+  }
+  .app-mc-explanation {
+    font-size: 11.5px !important;
+    line-height: 17px !important;
+    min-height: 60px !important;
+  }
+  .app-metric-card {
+    min-height: 84px !important;
+    padding: 0.5rem 0.625rem !important;
+  }
+  .app-metric-value {
+    font-size: 22px !important;
+  }
+  .app-metric-tag-1 {
+    font-size: 8.5px !important;
+  }
+  .app-metric-tag-2 {
+    font-size: 8px !important;
+  }
+  .app-ad-banner {
+    height: 46px !important;
+  }
+}
+
+/* Tier 3: Standard Android Mid (e.g. Galaxy A54/A55 360x740, w<=370 & h: 671-780) */
+@media (max-width: 370px) and (min-height: 671px) and (max-height: 780px) {
+  .app-header {
+    height: 64px !important;
+  }
+  .app-header-title {
+    font-size: 15px !important;
+  }
+  .app-hero {
+    padding: 0.75rem 0.875rem !important;
+  }
+  .app-hero-corpus {
+    font-size: 32px !important;
+  }
+  .app-hero-panel {
+    padding: 0.5rem 0.625rem !important;
+    gap: 0.375rem !important;
+  }
+  .app-hero-panel-row {
+    font-size: 11px !important;
+  }
+  .app-mc-container {
+    padding-top: 1.25rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  /* Increased Font Size by +2px for Tier 3 Monte Carlo Card */
+  .app-mc-tab-btn {
+    font-size: 13px !important;
+    padding-top: 0.375rem !important;
+    padding-bottom: 0.375rem !important;
+  }
+  .app-mc-risk-text {
+    font-size: 11px !important;
+  }
+  .app-mc-risk-pct {
+    font-size: 14px !important;
+  }
+  .app-mc-scenario-title {
+    font-size: 13.5px !important;
+  }
+  .app-mc-scenario-sub {
+    font-size: 10.5px !important;
+  }
+  .app-mc-explanation {
+    font-size: 13px !important;
+    line-height: 19px !important;
+    min-height: 72px !important;
+  }
+  .app-metric-card {
+    min-height: 84px !important;
+    padding: 0.5rem 0.625rem !important;
+  }
+  .app-metric-value {
+    font-size: 21px !important;
+  }
+  .app-ad-banner {
+    height: 50px !important;
+  }
+}
+
+/* Tier 4: Modern Android Note (e.g. Xiaomi Note 12 5G 383x763, w: 371-419 & h: 671-800) */
+@media (min-width: 371px) and (max-width: 419px) and (min-height: 671px) and (max-height: 800px) {
+  /* 1. Header: +3px font size (20px) */
+  .app-header {
+    height: 68px !important;
+  }
+  .app-header-title {
+    font-size: 20px !important;
+  }
+  .app-hero {
+    padding: 0.875rem 1rem !important;
+  }
+  .app-hero-corpus {
+    font-size: 38px !important;
+  }
+  .app-hero-panel {
+    padding: 0.625rem 0.75rem !important;
+    gap: 0.375rem !important;
+  }
+  .app-hero-panel-row {
+    font-size: 15px !important;
+  }
+  /* 2. Monte Carlo Card: +2px font size */
+  .app-mc-container {
+    padding-top: 1.375rem !important;
+    padding-bottom: 0.625rem !important;
+  }
+  .app-mc-main-header {
+    font-size: 11.5px !important;
+  }
+  .app-mc-tab-btn {
+    font-size: 13px !important;
+    padding-top: 0.375rem !important;
+    padding-bottom: 0.375rem !important;
+  }
+  .app-mc-risk-text {
+    font-size: 12px !important;
+  }
+  .app-mc-risk-pct {
+    font-size: 14px !important;
+  }
+  .app-mc-scenario-title {
+    font-size: 13.5px !important;
+  }
+  .app-mc-scenario-sub {
+    font-size: 11px !important;
+  }
+  .app-mc-explanation {
+    font-size: 13px !important;
+    line-height: 19px !important;
+    min-height: 72px !important;
+  }
+  /* 3. CAGR and Inflation Cards: +4px height (92px) & +2px font size (value 24px, tags 10.5px/10px) */
+  .app-metric-card {
+    min-height: 92px !important;
+    padding: 0.75rem 0.875rem !important;
+  }
+  .app-metric-value {
+    font-size: 24px !important;
+  }
+  .app-metric-tag-1 {
+    font-size: 10.5px !important;
+  }
+  .app-metric-tag-2 {
+    font-size: 10px !important;
+  }
+  .app-ad-banner {
+    height: 52px !important;
+  }
+}
+
+/* Tier 5: Large iPhone Plus / Pro Max (e.g. iPhone 15 Pro Max 430x740, w>=420 & h<=780) */
+@media (min-width: 420px) and (min-height: 671px) and (max-height: 780px) {
+  .app-header {
+    height: 70px !important;
+  }
+  .app-header-title {
+    font-size: 20px !important;
+  }
+  .app-hero {
+    padding: 1rem 1.125rem !important;
+  }
+  .app-hero-corpus {
+    font-size: 38px !important;
+  }
+  .app-hero-panel {
+    padding: 0.625rem 0.875rem !important;
+    gap: 0.375rem !important;
+  }
+  .app-mc-container {
+    padding-top: 1.5rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+  .app-mc-main-header {
+    font-size: 12px !important;
+  }
+  .app-mc-tab-btn {
+    font-size: 13.5px !important;
+    padding-top: 0.375rem !important;
+    padding-bottom: 0.375rem !important;
+  }
+  .app-mc-risk-text {
+    font-size: 12px !important;
+  }
+  .app-mc-risk-pct {
+    font-size: 14px !important;
+  }
+  .app-mc-scenario-title {
+    font-size: 14px !important;
+  }
+  .app-mc-scenario-sub {
+    font-size: 11.5px !important;
+  }
+  .app-mc-explanation {
+    font-size: 13.5px !important;
+    line-height: 19.5px !important;
+    min-height: 72px !important;
+  }
+  .app-metric-card {
+    min-height: 92px !important;
+    padding: 0.625rem 0.875rem !important;
+  }
+  .app-metric-value {
+    font-size: 24px !important;
+  }
+  .app-ad-banner {
+    height: 56px !important;
+  }
+}
+
+/* Tier 6: Flagship Tall Android (e.g. Samsung S24 Ultra 412x869, Pixel Pro h > 800) */
+@media (min-height: 801px) {
+  .app-header {
+    height: 74px !important;
+  }
+  .app-header-icon {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+  .app-header-title {
+    font-size: 20px !important;
+  }
+  .app-header-sub {
+    font-size: 13.5px !important;
+  }
+  .app-hero {
+    padding: 1.125rem 1.25rem !important;
+  }
+  .app-hero-corpus {
+    font-size: 42px !important;
+  }
+  .app-hero-panel {
+    padding: 0.75rem 1rem !important;
+    gap: 0.5rem !important;
+  }
+  .app-hero-panel-row {
+    font-size: 13.5px !important;
+  }
+  .app-mc-container {
+    padding-top: 1.75rem !important;
+    padding-bottom: 0.875rem !important;
+  }
+  .app-mc-main-header {
+    font-size: 12px !important;
+  }
+  .app-mc-tab-btn {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    font-size: 13.5px !important;
+  }
+  .app-mc-risk-text {
+    font-size: 12px !important;
+  }
+  .app-mc-risk-pct {
+    font-size: 14px !important;
+  }
+  .app-mc-scenario-title {
+    font-size: 15px !important;
+  }
+  .app-mc-scenario-sub {
+    font-size: 12.5px !important;
+  }
+  .app-mc-explanation {
+    font-size: 15px !important;
+    line-height: 22px !important;
+    min-height: 82px !important;
+  }
+  .app-metric-card {
+    min-height: 103px !important;
+    padding: 0.75rem 1rem !important;
+  }
+  .app-metric-value {
+    font-size: 30px !important;
+  }
+  .app-metric-tag-1 {
+    font-size: 13.5px !important;
+  }
+  .app-metric-tag-2 {
+    font-size: 12px !important;
+  }
+  .app-ad-banner {
+    height: 60px !important;
+  }
+  .app-ad-title {
+    font-size: 14px !important;
+  }
+  .app-ad-sub {
+    font-size: 11.5px !important;
+  }
 }

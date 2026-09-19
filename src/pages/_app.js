@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import { Montserrat } from "next/font/google";
 import Head from "next/head";
+import ViewportOverlay from "@/components/ViewportOverlay";
 
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-mont", display: "swap", preload: false });
 
@@ -19,6 +20,7 @@ export default function App({ Component, pageProps }) {
       </Head>
       <main className={`${montserrat.className} w-full h-full h-[100dvh] max-h-[100dvh] overflow-hidden flex flex-col fixed inset-0 overscroll-none`} suppressHydrationWarning>
         <Component {...pageProps} />
+        <ViewportOverlay />
       </main>
     </>
   );

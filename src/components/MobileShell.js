@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import RetirementCockpit from "./RetirementCockpit";
 import PartnerAdBanner from "./PartnerAdBanner";
 import AuthModal from "./AuthModal";
@@ -163,6 +163,21 @@ export default function MobileShell({
 
   const [liveInflationRate, setLiveInflationRate] = useState(null);
   const [activeDerivationModal, setActiveDerivationModal] = useState(null); // 'cagr' | 'inflation' | null
+  const [isClosingDerivationModal, setIsClosingDerivationModal] = useState(false);
+
+  const handleCloseDerivationModal = useCallback(() => {
+    if (isClosingDerivationModal) return;
+    setIsClosingDerivationModal(true);
+    setTimeout(() => {
+      setActiveDerivationModal(null);
+      setIsClosingDerivationModal(false);
+    }, 220);
+  }, [isClosingDerivationModal]);
+
+  const handleOpenDerivationModal = useCallback((type) => {
+    setIsClosingDerivationModal(false);
+    setActiveDerivationModal(type);
+  }, []);
 
   // Fetch live territory-specific inflation rate from World Bank API when unlocked
   useEffect(() => {
@@ -251,6 +266,52 @@ export default function MobileShell({
     });
   }, [monteCarloScenario, memberMetrics.isOnTrack]);
 
+  const explanationContainerRef = useRef(null);
+  const explanationTextRef = useRef(null);
+
+  // Dynamic on-the-fly auto-fitting calculation for scenario explanation text
+  useEffect(() => {
+    const container = explanationContainerRef.current;
+    const textEl = explanationTextRef.current;
+    if (!container || !textEl) return;
+
+    const adjustExplanationSize = () => {
+      if (!container || !textEl) return;
+      // Reset inline properties to let media queries establish initial baseline size
+      textEl.style.removeProperty("font-size");
+      textEl.style.removeProperty("line-height");
+
+      const availableHeight = container.clientHeight;
+      if (availableHeight <= 0) return;
+
+      let currentSize = parseFloat(window.getComputedStyle(textEl).fontSize) || 12;
+      const minSize = 8.5; // Legible floor threshold
+
+      // If text overflows available container height, iteratively scale down font size & line height
+      while (textEl.scrollHeight > availableHeight && currentSize > minSize) {
+        currentSize -= 0.25;
+        const currentLeading = Math.round(currentSize * 1.38 * 10) / 10;
+        textEl.style.setProperty("font-size", `${currentSize}px`, "important");
+        textEl.style.setProperty("line-height", `${currentLeading}px`, "important");
+      }
+    };
+
+    // Run adjustment immediately
+    adjustExplanationSize();
+
+    // Re-calculate on container resize or viewport resize
+    const observer = new ResizeObserver(() => {
+      adjustExplanationSize();
+    });
+    observer.observe(container);
+    window.addEventListener("resize", adjustExplanationSize);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", adjustExplanationSize);
+    };
+  }, [explanationText, monteCarloScenario, unlocks?.unlock_1]);
+
   const currencySymbol = useMemo(() => {
     return getCurrencySymbol(userCountry);
   }, [userCountry]);
@@ -291,25 +352,25 @@ export default function MobileShell({
   return (
     <div className="w-full h-[100dvh] max-h-[100dvh] bg-[#F2F2F7] text-[#1C1C1E] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom,0px)]">
       {/* Floating Header */}
-      <div className="w-full max-w-2xl mx-auto pt-2 sm:pt-3 px-4 shrink-0 z-30">
-        <header className="w-full h-[58px] sm:h-[70px] md:h-[76px] bg-white/90 backdrop-blur-xl border border-black/8 rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] px-3.5 sm:px-5 md:px-6 flex items-center justify-between transition-all select-none">
+      <div className="w-full max-w-2xl mx-auto pt-1 sm:pt-2 md:pt-3 px-3 sm:px-4 shrink-0 z-30">
+        <header className="w-full h-[58px] sm:h-[66px] md:h-[72px] app-header bg-white/90 backdrop-blur-xl border border-black/8 rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] px-3.5 sm:px-5 md:px-6 flex items-center justify-between transition-all select-none">
           <div className="flex items-center gap-2.5 sm:gap-3.5 md:gap-4 min-w-0">
             <img
               src="/icon-192x192.png"
               alt="Retirement Simulator Icon"
-              className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-xl sm:rounded-2xl object-contain shadow-[0_2px_8px_rgba(0,0,0,0.08)] select-none shrink-0"
+              className="w-8 h-8 sm:w-9 sm:h-9 md:w-11 md:h-11 app-header-icon rounded-xl sm:rounded-2xl object-contain shadow-[0_2px_8px_rgba(0,0,0,0.08)] select-none shrink-0"
             />
             {isPro ? (
               <div className="flex flex-col min-w-0 justify-center leading-tight">
-                <span className="text-xs sm:text-base md:text-lg font-black tracking-tight text-[#1C1C1E] truncate">
+                <span className="text-xs sm:text-base md:text-lg app-header-title font-black tracking-tight text-[#1C1C1E] truncate">
                   {proName || "Pro Member"}
                 </span>
-                <span className="text-[10px] sm:text-xs md:text-sm font-semibold text-[#8A6414] tracking-tight truncate">
+                <span className="text-[10px] sm:text-xs md:text-sm app-header-sub font-semibold text-[#8A6414] tracking-tight truncate">
                   Retirement Journey
                 </span>
               </div>
             ) : (
-              <span className="text-[13px] sm:text-base md:text-lg font-black tracking-tight text-[#1C1C1E] truncate">
+              <span className="text-[13px] sm:text-base md:text-lg app-header-title font-black tracking-tight text-[#1C1C1E] truncate">
                 Retirement Simulator
               </span>
             )}
@@ -339,13 +400,13 @@ export default function MobileShell({
       </div>
 
       {/* Main Viewport */}
-      <main className="w-full max-w-2xl mx-auto px-4 sm:px-6 pt-2 pb-1.5 flex-1 flex flex-col min-h-0 overflow-hidden">
+      <main className="w-full max-w-2xl mx-auto px-3.5 sm:px-5 md:px-6 pt-1.5 sm:pt-2 pb-1.5 flex-1 flex flex-col min-h-0 overflow-hidden">
         {isPro ? (
           /* Container for Hero Card, Extension Card & Metric Cards */
           <div className="w-full h-full flex-1 min-h-0 flex flex-col justify-between overflow-hidden">
             {/* 1. Member Hero Card */}
             <div
-              className="w-full shrink-0 relative text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 md:p-5 overflow-hidden shadow-lg flex items-center justify-between gap-2.5 sm:gap-4 z-20 select-none border border-amber-300/20"
+              className="w-full shrink-0 relative text-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 md:p-5 app-hero overflow-hidden shadow-lg flex items-center justify-between gap-2.5 sm:gap-4 z-20 select-none border border-amber-300/20"
                 style={{
                   background: "linear-gradient(135deg, #C59A3F 0%, #3E2B00 100%)"
                 }}
@@ -361,7 +422,7 @@ export default function MobileShell({
                   <CurrencyDisplay
                     value={memberMetrics.requiredCorpus}
                     symbol={currencySymbol}
-                    size="text-[34px] sm:text-[40px] md:text-[44px]"
+                    size="text-[32px] sm:text-[38px] md:text-[44px] app-hero-corpus"
                     hasStroke={true}
                     symbolOffset="-top-[0.52em]"
                     symbolSize="text-[0.52em]"
@@ -374,9 +435,9 @@ export default function MobileShell({
                 </div>
 
                 {/* Right Column: Expanded Structured Frosted Glass Panel (~54% width) */}
-                <div className="w-[54%] max-w-[240px] bg-black/25 backdrop-blur-md rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 border border-white/12 flex flex-col gap-2 relative z-10 shrink-0 shadow-inner">
+                <div className="w-[54%] max-w-[240px] bg-black/25 backdrop-blur-md rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 app-hero-panel border border-white/12 flex flex-col gap-2 relative z-10 shrink-0 shadow-inner">
                   {/* Row 1: Target Year & Age */}
-                  <div className="flex items-center justify-between text-[11px] sm:text-[12.5px] leading-none">
+                  <div className="flex items-center justify-between text-[11px] sm:text-[12.5px] app-hero-panel-row leading-none">
                     <span className="text-white/60 font-semibold text-[9px] sm:text-[10.5px] uppercase tracking-wider">
                       Retire Target
                     </span>
@@ -390,7 +451,7 @@ export default function MobileShell({
                   </div>
 
                   {/* Row 2: Surplus / Shortfall + Amount */}
-                  <div className="flex items-center justify-between text-[11px] sm:text-[12.5px] leading-none">
+                  <div className="flex items-center justify-between text-[11px] sm:text-[12.5px] app-hero-panel-row leading-none">
                     <span
                       className={`font-black text-[9px] sm:text-[10.5px] uppercase tracking-wider ${
                         memberMetrics.isOnTrack ? "text-[#85E394]" : "text-orange-300"
@@ -412,7 +473,7 @@ export default function MobileShell({
                   </div>
 
                   {/* Row 3: Est. Future Expense & Funded Pill */}
-                  <div className="pt-1.5 border-t border-white/10 flex items-center justify-between text-[10.5px] sm:text-[11.5px] leading-none">
+                  <div className="pt-1.5 border-t border-white/10 flex items-center justify-between text-[10.5px] sm:text-[11.5px] app-hero-panel-row leading-none">
                     <div className="flex items-center gap-1">
                       <span className="text-white/60 text-[8.5px] sm:text-[9.5px] font-medium uppercase leading-none">
                         FV Exp:
@@ -444,20 +505,20 @@ export default function MobileShell({
               </div>
 
               {/* 2. Extension Card (Starts from where Hero Card corners round) */}
-              <div className="w-full flex-1 min-h-0 -mt-3.5 sm:-mt-4.5 pt-6 sm:pt-7 pb-2.5 px-3.5 sm:px-5 bg-white/90 backdrop-blur-xl border border-black/8 rounded-b-2xl sm:rounded-b-3xl rounded-t-xl sm:rounded-t-2xl shadow-[0_12px_36px_rgba(0,0,0,0.06)] flex flex-col justify-between text-center relative z-10 transition-none transform-none overflow-hidden">
+              <div className="w-full flex-1 min-h-0 -mt-3.5 sm:-mt-4.5 pt-6 sm:pt-7 pb-2.5 px-3.5 sm:px-5 app-mc-container bg-white/90 backdrop-blur-xl border border-black/8 rounded-b-2xl sm:rounded-b-3xl rounded-t-xl sm:rounded-t-2xl shadow-[0_12px_36px_rgba(0,0,0,0.06)] flex flex-col justify-between text-center relative z-10 transition-none transform-none overflow-hidden">
                 {/* Top Section: Header, Monte Carlo 3-Tab Selector & Risk Percentage */}
                 <div className="w-full flex flex-col items-center pt-0.5 shrink-0">
                   {/* Header in Clearance */}
-                  <span className="text-[9.5px] sm:text-[10.5px] font-black uppercase tracking-[0.16em] text-[#8A6414] mb-2">
+                  <span className="text-[9.5px] sm:text-[10.5px] app-mc-main-header font-black uppercase tracking-[0.16em] text-[#8A6414] mb-2">
                     Monte Carlo Stochastic Probability
                   </span>
 
                   {/* 3 Selector Tabs: Standard, Conservative, Chaotic */}
-                  <div className="w-full max-w-sm bg-[#E5E5EA]/70 p-1 rounded-xl flex items-center gap-1 border border-black/5 shadow-inner">
+                  <div className="w-full max-w-sm bg-[#E5E5EA]/70 p-1 app-mc-tabs rounded-xl flex items-center gap-1 border border-black/5 shadow-inner">
                     <button
                       type="button"
                       onClick={() => setMonteCarloScenario("standard")}
-                      className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] sm:text-xs font-black cursor-pointer select-none transition-none active:scale-100 touch-manipulation ${
+                      className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] sm:text-xs app-mc-tab-btn font-black cursor-pointer select-none transition-none active:scale-100 touch-manipulation ${
                         monteCarloScenario === "standard"
                           ? "bg-white text-[#1C1C1E] shadow-sm border border-black/5"
                           : "text-gray-500 hover:text-gray-900 border border-transparent"
@@ -468,7 +529,7 @@ export default function MobileShell({
                     <button
                       type="button"
                       onClick={() => setMonteCarloScenario("conservative")}
-                      className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] sm:text-xs font-black cursor-pointer select-none transition-none active:scale-100 touch-manipulation ${
+                      className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] sm:text-xs app-mc-tab-btn font-black cursor-pointer select-none transition-none active:scale-100 touch-manipulation ${
                         monteCarloScenario === "conservative"
                           ? "bg-white text-[#1C1C1E] shadow-sm border border-black/5"
                           : "text-gray-500 hover:text-gray-900 border border-transparent"
@@ -479,7 +540,7 @@ export default function MobileShell({
                     <button
                       type="button"
                       onClick={() => setMonteCarloScenario("chaotic")}
-                      className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] sm:text-xs font-black cursor-pointer select-none transition-none active:scale-100 touch-manipulation ${
+                      className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] sm:text-xs app-mc-tab-btn font-black cursor-pointer select-none transition-none active:scale-100 touch-manipulation ${
                         monteCarloScenario === "chaotic"
                           ? "bg-white text-[#1C1C1E] shadow-sm border border-black/5"
                           : "text-gray-500 hover:text-gray-900 border border-transparent"
@@ -490,13 +551,13 @@ export default function MobileShell({
                   </div>
 
                   {/* Risk Percentage Bar & Metrics */}
-                  <div className="w-full max-w-sm mt-2.5 px-1 flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between text-[11px] sm:text-xs">
+                  <div className="w-full max-w-sm mt-2.5 px-1 flex flex-col gap-1.5 app-mc-risk">
+                    <div className="flex items-center justify-between text-[11px] sm:text-xs app-mc-risk-text">
                       <span className="font-bold text-gray-500">
                         Risk Percentage:
                       </span>
                       <span
-                        className={`font-black flex items-center gap-1 text-[12px] sm:text-[13px] ${
+                        className={`font-black flex items-center gap-1 text-[12px] sm:text-[13px] app-mc-risk-pct ${
                           monteCarloScenario === "standard"
                             ? "text-emerald-600"
                             : monteCarloScenario === "conservative"
@@ -526,19 +587,19 @@ export default function MobileShell({
                 </div>
 
                 {/* Middle Content: Scenario Breakdown & Simulation Meaning */}
-                <div className="w-full flex-1 min-h-0 my-1.5 sm:my-2 flex flex-col justify-between bg-white/70 backdrop-blur-md rounded-xl p-3 sm:p-4 border border-black/6 shadow-sm text-left overflow-hidden">
+                <div className="w-full flex-1 min-h-0 my-1.5 sm:my-2 flex flex-col justify-between bg-white/70 backdrop-blur-md rounded-xl p-3 sm:p-4 app-mc-content-box border border-black/6 shadow-sm text-left overflow-hidden">
                   <div className="flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-[#8A6414] shrink-0 border border-amber-500/20">
                         <Info className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#8A6414] stroke-[2.2]" />
                       </div>
                       <div className="flex flex-col justify-center leading-tight">
-                        <span className="text-[11.5px] sm:text-[12.5px] font-black text-[#1C1C1E]">
+                        <span className="text-[11.5px] sm:text-[12.5px] app-mc-scenario-title font-black text-[#1C1C1E]">
                           {monteCarloScenario === "conservative" && "Conservative"}
                           {monteCarloScenario === "standard" && "50-Year Market"}
                           {monteCarloScenario === "chaotic" && "Chaotic Stagflation"}
                         </span>
-                        <span className="text-[9.5px] sm:text-[10.5px] font-bold text-gray-500 tracking-tight">
+                        <span className="text-[9.5px] sm:text-[10.5px] app-mc-scenario-sub font-bold text-gray-500 tracking-tight">
                           {monteCarloScenario === "conservative" && "Lower Yield Drag"}
                           {monteCarloScenario === "standard" && "Benchmark Growth"}
                           {monteCarloScenario === "chaotic" && "& Crash Shock"}
@@ -555,10 +616,12 @@ export default function MobileShell({
                     </div>
                   </div>
 
-                  {/* Impactful Scenario Assessment (On Track vs Risk Warning) */}
-                  <p className="min-h-[72px] sm:min-h-[78px] text-[10.5px] sm:text-[11.5px] text-gray-700 leading-[17.5px] sm:leading-[19px] my-1 text-left font-normal">
-                    {explanationText}
-                  </p>
+                  {/* Impactful Scenario Assessment (On Track vs Risk Warning) - Vertically Centered & Auto-Fitting */}
+                  <div ref={explanationContainerRef} className="flex-1 flex flex-col justify-center min-h-0 my-auto overflow-hidden">
+                    <p ref={explanationTextRef} className="app-mc-explanation text-[10.5px] sm:text-[11.5px] text-gray-700 leading-[17.5px] sm:leading-[19px] my-auto text-left font-normal">
+                      {explanationText}
+                    </p>
+                  </div>
 
                   {/* Unlock Professional Standard Clickable CTA (Hidden when already unlocked) */}
                   {unlocks?.unlock_1 !== "Unlocked" && (
@@ -582,14 +645,14 @@ export default function MobileShell({
                 <div
                   onClick={() => {
                     if (scenarioParams.isCagrUnlocked) {
-                      setActiveDerivationModal("cagr");
+                      handleOpenDerivationModal("cagr");
                     }
                   }}
                   className={`bg-white/90 backdrop-blur-xl border ${
                     scenarioParams.isCagrUnlocked
                       ? "border-amber-500/25 hover:border-amber-500/50 cursor-pointer active:scale-95 shadow-sm hover:shadow-md"
                       : "border-black/8"
-                  } rounded-2xl sm:rounded-3xl ${
+                  } rounded-2xl sm:rounded-3xl app-metric-card ${
                     unlocks?.unlock_1 === "Unlocked"
                       ? "min-h-[88px] sm:min-h-[96px] py-2 sm:py-2.5"
                       : "min-h-[80px] sm:min-h-[88px] py-1.5 sm:py-2"
@@ -606,7 +669,7 @@ export default function MobileShell({
                     </div>
 
                     <div className="flex items-baseline gap-0.5 my-0.5">
-                      <span className="text-[21px] sm:text-[24px] font-black text-[#1C1C1E] tracking-tight leading-none">
+                      <span className="text-[21px] sm:text-[24px] app-metric-value font-black text-[#1C1C1E] tracking-tight leading-none">
                         {scenarioParams.cagr.toFixed(1)}
                       </span>
                       <span className="text-[12.5px] sm:text-[14px] font-black text-[#8A6414] leading-none">
@@ -616,11 +679,11 @@ export default function MobileShell({
 
                     <div className="flex flex-col gap-0.5 min-w-0">
                       {scenarioParams.allocationTag && (
-                        <span className="text-[8.5px] sm:text-[9.5px] font-bold text-[#8A6414] truncate block leading-tight">
+                        <span className="text-[8.5px] sm:text-[9.5px] app-metric-tag-1 font-bold text-[#8A6414] truncate block leading-tight">
                           {scenarioParams.allocationTag}
                         </span>
                       )}
-                      <span className="text-[8px] sm:text-[9px] font-bold text-gray-500 block truncate leading-tight">
+                      <span className="text-[8px] sm:text-[9px] app-metric-tag-2 font-bold text-gray-500 block truncate leading-tight">
                         {scenarioParams.cagrTag}
                       </span>
                     </div>
@@ -648,14 +711,14 @@ export default function MobileShell({
                 <div
                   onClick={() => {
                     if (scenarioParams.isTerritoryUnlocked) {
-                      setActiveDerivationModal("inflation");
+                      handleOpenDerivationModal("inflation");
                     }
                   }}
                   className={`bg-white/90 backdrop-blur-xl border ${
                     scenarioParams.isTerritoryUnlocked
                       ? "border-amber-500/25 hover:border-amber-500/50 cursor-pointer active:scale-95 shadow-sm hover:shadow-md"
                       : "border-black/8"
-                  } rounded-2xl sm:rounded-3xl ${
+                  } rounded-2xl sm:rounded-3xl app-metric-card ${
                     unlocks?.unlock_1 === "Unlocked"
                       ? "min-h-[88px] sm:min-h-[96px] py-2 sm:py-2.5"
                       : "min-h-[80px] sm:min-h-[88px] py-1.5 sm:py-2"
@@ -672,7 +735,7 @@ export default function MobileShell({
                     </div>
 
                     <div className="flex items-baseline gap-0.5 my-0.5">
-                      <span className="text-[21px] sm:text-[24px] font-black text-[#1C1C1E] tracking-tight leading-none">
+                      <span className="text-[21px] sm:text-[24px] app-metric-value font-black text-[#1C1C1E] tracking-tight leading-none">
                         {scenarioParams.inflation.toFixed(1)}
                       </span>
                       <span className="text-[12.5px] sm:text-[14px] font-black text-[#8A6414] leading-none">
@@ -682,11 +745,11 @@ export default function MobileShell({
 
                     <div className="flex flex-col gap-0.5 min-w-0">
                       {scenarioParams.territoryTag && (
-                        <span className="text-[8.5px] sm:text-[9.5px] font-bold text-[#8A6414] truncate block leading-tight">
+                        <span className="text-[8.5px] sm:text-[9.5px] app-metric-tag-1 font-bold text-[#8A6414] truncate block leading-tight">
                           {scenarioParams.territoryTag}
                         </span>
                       )}
-                      <span className="text-[8px] sm:text-[9px] font-bold text-gray-500 block truncate leading-tight">
+                      <span className="text-[8px] sm:text-[9px] app-metric-tag-2 font-bold text-gray-500 block truncate leading-tight">
                         {scenarioParams.inflationTag}
                       </span>
                     </div>
@@ -725,11 +788,15 @@ export default function MobileShell({
       {/* Vertically Centered 3/4-Screen Explanation Modal for Unlocked CAGR & Inflation */}
       {activeDerivationModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-modal-backdrop"
-          onClick={() => setActiveDerivationModal(null)}
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 ${
+            isClosingDerivationModal ? "animate-modal-backdrop-out pointer-events-none" : "animate-modal-backdrop"
+          }`}
+          onClick={handleCloseDerivationModal}
         >
           <div
-            className="w-[94%] sm:w-[85%] max-w-sm max-h-[72vh] overflow-y-auto no-scrollbar bg-white rounded-3xl p-4 sm:p-5 shadow-2xl border border-black/10 flex flex-col justify-between text-left select-none animate-modal-pop"
+            className={`w-[94%] sm:w-[85%] max-w-sm max-h-[72vh] overflow-y-auto no-scrollbar bg-white rounded-3xl p-4 sm:p-5 shadow-2xl border border-black/10 flex flex-col justify-between text-left select-none ${
+              isClosingDerivationModal ? "animate-modal-pop-out" : "animate-modal-pop"
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             {activeDerivationModal === "cagr" && (
@@ -751,7 +818,7 @@ export default function MobileShell({
                   </div>
                   <button
                     type="button"
-                    onClick={() => setActiveDerivationModal(null)}
+                    onClick={handleCloseDerivationModal}
                     className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     <X className="w-4 h-4" />
@@ -806,7 +873,7 @@ export default function MobileShell({
                 <div className="pt-2 mt-2 border-t border-black/5 flex justify-end">
                   <button
                     type="button"
-                    onClick={() => setActiveDerivationModal(null)}
+                    onClick={handleCloseDerivationModal}
                     className="w-full py-2 rounded-xl bg-[#1C1C1E] text-white text-xs font-black hover:bg-black transition-colors cursor-pointer"
                   >
                     Close Derivation
@@ -834,7 +901,7 @@ export default function MobileShell({
                   </div>
                   <button
                     type="button"
-                    onClick={() => setActiveDerivationModal(null)}
+                    onClick={handleCloseDerivationModal}
                     className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     <X className="w-4 h-4" />
@@ -893,7 +960,7 @@ export default function MobileShell({
                 <div className="pt-2 mt-2 border-t border-black/5 flex justify-end">
                   <button
                     type="button"
-                    onClick={() => setActiveDerivationModal(null)}
+                    onClick={handleCloseDerivationModal}
                     className="w-full py-2 rounded-xl bg-[#1C1C1E] text-white text-xs font-black hover:bg-black transition-colors cursor-pointer"
                   >
                     Close Derivation

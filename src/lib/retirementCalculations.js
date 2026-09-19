@@ -435,20 +435,20 @@ export function getScenarioExplanationText({
 }) {
   if (isOnTrack) {
     if (scenario === "conservative") {
-      return "Your retirement trajectory remains resilient even through prolonged economic stagnation. With defensive yields and persistent inflation, your capital accumulation cushions against sequence risk, preserving your financial independence across your full retirement horizon.";
+      return "Your retirement trajectory demonstrates substantial endurance through prolonged economic stagnation. By factoring in defensive equity returns alongside persistent inflation, your accumulation creates an effective cushion against severe sequence risk. Your compounding surplus guarantees full lifetime capital preservation, maintaining your financial independence and standard of living throughout retirement.";
     }
     if (scenario === "chaotic") {
-      return "Your nest egg demonstrates exceptional resilience under extreme stagflation and crash shocks. Even when forced to withdraw living expenses during market downturns, your surplus capital prevents early depletion and keeps your retirement secure through life expectancy.";
+      return "Your portfolio demonstrates exceptional resilience under extreme market volatility, multi-year drawdowns, and stagflationary shocks. Even when regular living expenses are withdrawn during steep economic contractions, your surplus buffer shields core assets against depletion. This stress test confirms your capital remains fully solvent past life expectancy across cycles.";
     }
-    return "Your current savings rate builds sufficient momentum to withstand lifetime living costs. Your portfolio comfortably outpaces cost-of-living drag, ensuring your capital reserves remain robust and fully funded past life expectancy without requiring lifestyle cuts.";
+    return "Your systematic savings rate establishes strong financial momentum capable of outpacing historical inflation and cost-of-living increases. Backed by 50-year benchmark equity growth, your capital accumulation steadily outpaces compounding expenses throughout decumulation. Your plan successfully minimizes sequence risk, ensuring uninterrupted cash flow and asset longevity past life expectancy.";
   }
 
   // Off-track / At-Risk Warning State
   if (scenario === "conservative") {
-    return "High Risk: Slower market growth combined with persistent inflation significantly accelerates portfolio burnout. Taking living expenses during low-yield cycles burns principal quickly. We strongly advise building a larger cash reserve and trimming discretionary costs.";
+    return "High Risk Warning: Slower economic growth coupled with sticky inflation accelerates portfolio depletion during retirement. Liquidating investments during low-yield cycles burns through principal capital rapidly, creating a critical shortfall risk before life expectancy. We recommend taking proactive measures immediately by boosting monthly savings, optimizing asset allocation, and expanding your liquidity cushion.";
   }
   if (scenario === "chaotic") {
-    return "Severe Danger: Extreme market shocks and stagflation create catastrophic sequence-of-returns drag. Liquidating depressed assets to cover living needs will cause rapid capital exhaustion. Immediate action is needed to increase savings or secure alternative retirement income.";
+    return "Critical Danger: Severe stagflationary shocks and historical crash drawdowns inflict catastrophic sequence-of-returns erosion on your nest egg. Forcing regular withdrawals from depressed assets triggers compounding principal destruction, risking early exhaustion. Immediate intervention is required: boost monthly savings, extend your accumulation horizon, or secure supplementary guaranteed retirement income.";
   }
-  return "Warning: Your current plan faces premature depletion before life expectancy. Living costs compounding over time will outpace accumulation, risking a critical capital gap. You should increase monthly contributions or extend your retirement timeline to restore solvency.";
+  return "Plan Alert: Your current projected trajectory risks premature fund depletion prior to reaching full life expectancy. As compounding living expenses and inflation gradually outpace portfolio growth, your nest egg faces a critical capital shortfall during later retirement years. To ensure lifetime solvency, consider increasing monthly contributions, extending your career, or adjusting target expenses.";
 }

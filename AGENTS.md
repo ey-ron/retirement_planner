@@ -59,6 +59,12 @@
   - **STRICT PROHIBITION**: NEVER use, alter, overwrite, mutate, or delete any non-dev accounts or records (`is_dev = false` / production customer records).
   - All automated tests, local debugging, mock logins, trial calculations, and sandbox scripts MUST strictly operate on accounts explicitly flagged with `is_dev = true`.
 
+## Layout & Viewport Architecture Guardrails
+- **Strictly Non-Scrollable Single-Screen Dashboard**:
+  - The design is strictly 100% viewport locked (`100dvh` / `overflow: hidden !important`) across ALL pages, views, modals, tabs, and mobile device screen sizes.
+  - NEVER introduce page-level scrolling (`overflow-y: auto`, `overflow-y: scroll`) on the main layout or dashboard containers.
+  - All cards, headers, sections, and banners must fit cohesively inside the single viewport height without cutting off content or causing scrollbars.
+
 ## Interaction & Output Rules
 - **Token Usage Reporting**:
   - On every response moving forward, always provide a token count summary (Prompt Tokens, Response Tokens, and Total Tokens for the turn).
