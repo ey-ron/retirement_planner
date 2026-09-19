@@ -26,6 +26,21 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (!licErr && license) {
+        // Record timestamp for last login / access
+        const nowIso = new Date().toISOString();
+        try {
+          await supabase
+            .from("pro_licenses")
+            .update({
+              last_login_at: nowIso,
+              last_accessed_at: nowIso,
+              updated_at: nowIso
+            })
+            .eq("id", license.id);
+        } catch (stampErr) {
+          console.warn("[Login API] last_login_at timestamp update notice:", stampErr.message);
+        }
+
         // 2. Fetch plan from dedicated user_retirement_plans table
         let loadedPlan = null;
         try {

@@ -32,6 +32,23 @@ export default async function handler(req, res) {
 
       const userId = parentUser?.id || null;
       const country = parentUser?.country || "Singapore";
+
+      // Touch parent user's last_accessed_at
+      if (userId) {
+        const nowIso = new Date().toISOString();
+        try {
+          await supabase
+            .from("pro_licenses")
+            .update({
+              last_accessed_at: nowIso,
+              updated_at: nowIso
+            })
+            .eq("id", userId);
+        } catch (accessErr) {
+          console.warn("[Save Plan API] last_accessed_at notice:", accessErr.message);
+        }
+      }
+
       const currencySymbol = getCurrencySymbol(country);
       const metrics = computeSimulationMetrics(planData);
 

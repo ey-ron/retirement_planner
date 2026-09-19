@@ -39,6 +39,7 @@ export default async function handler(req, res) {
 
     try {
       // 1. Upsert into pro_licenses table (resilient to missing columns)
+      const nowIso = new Date().toISOString();
       let { data: userData, error: userErr } = await supabase
         .from("pro_licenses")
         .upsert(
@@ -48,7 +49,9 @@ export default async function handler(req, res) {
             country: cleanCountry,
             is_pro: true,
             ...defaultUnlocks,
-            updated_at: new Date().toISOString()
+            last_login_at: nowIso,
+            last_accessed_at: nowIso,
+            updated_at: nowIso
           },
           { onConflict: "email" }
         )
@@ -66,7 +69,9 @@ export default async function handler(req, res) {
               email: cleanEmail,
               name: cleanName,
               is_pro: true,
-              updated_at: new Date().toISOString()
+              last_login_at: nowIso,
+              last_accessed_at: nowIso,
+              updated_at: nowIso
             },
             { onConflict: "email" }
           )

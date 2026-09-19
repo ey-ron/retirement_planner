@@ -30,6 +30,20 @@ export default async function handler(req, res) {
     }
 
     if (license && license.is_pro) {
+      const nowIso = new Date().toISOString();
+      try {
+        await supabase
+          .from("pro_licenses")
+          .update({
+            last_login_at: nowIso,
+            last_accessed_at: nowIso,
+            updated_at: nowIso
+          })
+          .eq("id", license.id);
+      } catch (touchErr) {
+        console.warn("[Restore Pro] last_login_at update notice:", touchErr.message);
+      }
+
       return res.status(200).json({
         success: true,
         isPro: true,
