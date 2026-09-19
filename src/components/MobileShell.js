@@ -2,7 +2,11 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import RetirementCockpit from "./RetirementCockpit";
 import PartnerAdBanner from "./PartnerAdBanner";
 import AuthModal from "./AuthModal";
-import { Sparkles, LogIn, Sliders, CheckCircle2, RotateCcw, Lock, ShieldCheck, Info, TrendingUp, Flame, X } from "lucide-react";
+import { 
+  Sparkles, LogIn, Sliders, CheckCircle2, RotateCcw, Lock, ShieldCheck, 
+  Info, TrendingUp, Flame, X, Plus, Trash2, Edit3, Check, ArrowRight, 
+  ArrowLeft, ChevronRight, ChevronLeft, Loader2, PieChart, RefreshCw
+} from "lucide-react";
 import {
   computeSimulationMetrics,
   formatAbbreviatedNumber,
@@ -11,10 +15,12 @@ import {
   getCountryInfo,
   computeUniversalInflation,
   computeMultiAssetPortfolio,
+  computeCustomPortfolioMetrics,
   getScenarioExplanationRows,
   getScenarioExplanationText,
   INSTITUTIONAL_ASSETS
 } from "../lib/retirementCalculations";
+
 
 // Clean, perfectly calibrated CurrencyDisplay component
 function CurrencyDisplay({
@@ -161,9 +167,201 @@ export default function MobileShell({
     };
   }, []);
 
+  const [customInvestments, setCustomInvestments] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("retirement_custom_investments");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (e) {}
+    }
+    return [];
+  });
+
+
   const [liveInflationRate, setLiveInflationRate] = useState(null);
   const [activeDerivationModal, setActiveDerivationModal] = useState(null); // 'cagr' | 'inflation' | null
   const [isClosingDerivationModal, setIsClosingDerivationModal] = useState(false);
+  const [cagrModalTab, setCagrModalTab] = useState("derivation"); // 'derivation' | 'investments'
+
+  // Investment Setup Form State
+  const [editingHoldingId, setEditingHoldingId] = useState(null);
+  const [formSymbol, setFormSymbol] = useState("");
+  const [formUnits, setFormUnits] = useState("");
+  const [formPrice, setFormPrice] = useState("");
+  const [isFetchingTicker, setIsFetchingTicker] = useState(false);
+  const [tickerFeedback, setTickerFeedback] = useState(null);
+
+  // Swipe gesture tracking refs for smooth horizontal touch navigation
+  const touchStartXRef = useRef(null);
+  const touchStartYRef = useRef(null);
+
+  const handleTouchStart = (e) => {
+    if (e.touches && e.touches[0]) {
+      touchStartXRef.current = e.touches[0].clientX;
+      touchStartYRef.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartXRef.current === null || !e.changedTouches || !e.changedTouches[0]) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
+    const deltaY = e.changedTouches[0].clientY - (touchStartYRef.current || 0);
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+
+    // Detect horizontal swipe if deltaX is dominant (>40px threshold and >1.3x vertical movement)
+    if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3) {
+      if (deltaX < 0 && cagrModalTab === "derivation") {
+        // Swiped Left -> go to investments
+        setCagrModalTab("investments");
+      } else if (deltaX > 0 && cagrModalTab === "investments") {
+        // Swiped Right -> return to derivation
+        setCagrModalTab("derivation");
+      }
+    }
+  };
+
+  const handleSaveInvestments = useCallback((newInvestments) => {
+    setCustomInvestments(newInvestments);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("retirement_custom_investments", JSON.stringify(newInvestments));
+      } catch (e) {}
+    }
+  }, []);
+
+  const handleFetchTickerInfo = useCallback(async (symToFetch) => {
+    const symbol = (symToFetch || formSymbol).trim().toUpperCase();
+    if (!symbol || symbol.length < 2) return null;
+    setIsFetchingTicker(true);
+    setTickerFeedback(null);
+    try {
+      const res = await fetch(`/api/market/cagr?symbol=${encodeURIComponent(symbol)}`);
+      const data = await res.json();
+      if (data && data.success) {
+        if (data.price !== undefined && data.price !== null) {
+          setFormPrice(data.price.toString());
+        }
+        setTickerFeedback({
+          success: true,
+          text: `Live Price: $${data.price} • ${data.periodLabel}: ${data.cagr}% CAGR`,
+          data
+        });
+        return data;
+      } else {
+        setTickerFeedback({ success: false, text: data?.message || "Ticker not found on live market." });
+      }
+    } catch (err) {
+      setTickerFeedback({ success: false, text: "Unable to query live market." });
+    } finally {
+      setIsFetchingTicker(false);
+    }
+    return null;
+  }, [formSymbol]);
+
+  // Automatically fetch live price and 20-yr CAGR when user types a symbol (500ms debounce)
+  useEffect(() => {
+    const sym = formSymbol.trim().toUpperCase();
+    if (!sym || sym.length < 2) {
+      setIsFetchingTicker(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      handleFetchTickerInfo(sym);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formSymbol, handleFetchTickerInfo]);
+
+
+  const handleAddOrUpdateHolding = useCallback(async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const symbol = formSymbol.trim().toUpperCase();
+    const units = parseFloat(formUnits);
+    const price = parseFloat(formPrice);
+    if (!symbol || isNaN(units) || units <= 0 || isNaN(price) || price <= 0) return;
+
+    let tickerData = tickerFeedback?.data;
+    if (!tickerData || tickerData.symbol !== symbol) {
+      tickerData = await handleFetchTickerInfo(symbol);
+    }
+
+    const cagr = typeof tickerData?.cagr === "number" ? tickerData.cagr : 8.8;
+    const sigma = typeof tickerData?.sigma === "number" ? tickerData.sigma : 16.0;
+    const name = tickerData?.name || `${symbol} Holding`;
+    const yearsTracked = typeof tickerData?.yearsTracked === "number" ? tickerData.yearsTracked : 20.0;
+
+    if (editingHoldingId) {
+      const updated = customInvestments.map(inv =>
+        inv.id === editingHoldingId
+          ? { ...inv, symbol, units, price, cagr, sigma, name, yearsTracked }
+          : inv
+      );
+      handleSaveInvestments(updated);
+      setEditingHoldingId(null);
+    } else {
+      const newHolding = {
+        id: `inv-${Date.now()}`,
+        symbol,
+        units,
+        price,
+        cagr,
+        sigma,
+        name,
+        yearsTracked
+      };
+      handleSaveInvestments([...customInvestments, newHolding]);
+    }
+
+    setFormSymbol("");
+    setFormUnits("");
+    setFormPrice("");
+    setTickerFeedback(null);
+  }, [formSymbol, formUnits, formPrice, tickerFeedback, editingHoldingId, customInvestments, handleFetchTickerInfo, handleSaveInvestments]);
+
+  const handleStartEditHolding = (holding) => {
+    setEditingHoldingId(holding.id);
+    setFormSymbol(holding.symbol);
+    setFormUnits(holding.units.toString());
+    setFormPrice(holding.price.toString());
+    setTickerFeedback(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingHoldingId(null);
+    setFormSymbol("");
+    setFormUnits("");
+    setFormPrice("");
+    setTickerFeedback(null);
+  };
+
+  const handleDeleteHolding = (id) => {
+    const updated = customInvestments.filter(inv => inv.id !== id);
+    handleSaveInvestments(updated);
+    if (editingHoldingId === id) {
+      handleCancelEdit();
+    }
+  };
+
+  const handleResetToDefaultInvestments = () => {
+    handleSaveInvestments([
+      { id: "inv-1", symbol: "VWRA", name: "Vanguard FTSE All-World UCITS", units: 80, price: 191.66, cagr: 12.92, sigma: 15.02, yearsTracked: 7.2 },
+      { id: "inv-2", symbol: "CNDX", name: "iShares NASDAQ 100 UCITS", units: 20, price: 1692.20, cagr: 19.14, sigma: 16.72, yearsTracked: 16.0 }
+    ]);
+    handleCancelEdit();
+  };
+
+  const [formExpenseInput, setFormExpenseInput] = useState(() => (simulationData?.monthlyExpense || 3000).toString());
+
+  useEffect(() => {
+    if (simulationData?.monthlyExpense) {
+      setFormExpenseInput(simulationData.monthlyExpense.toString());
+    }
+  }, [simulationData?.monthlyExpense]);
 
   const handleCloseDerivationModal = useCallback(() => {
     if (isClosingDerivationModal) return;
@@ -171,13 +369,30 @@ export default function MobileShell({
     setTimeout(() => {
       setActiveDerivationModal(null);
       setIsClosingDerivationModal(false);
+      setCagrModalTab("derivation");
     }, 220);
   }, [isClosingDerivationModal]);
 
   const handleOpenDerivationModal = useCallback((type) => {
     setIsClosingDerivationModal(false);
     setActiveDerivationModal(type);
-  }, []);
+    setCagrModalTab("derivation");
+    if (type === "fvExp") {
+      setFormExpenseInput((simulationData?.monthlyExpense || 3000).toString());
+    }
+  }, [simulationData?.monthlyExpense]);
+
+  const handleSaveMonthlyExpense = useCallback((e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const val = parseFloat(formExpenseInput);
+    if (!isNaN(val) && val > 0) {
+      if (onUpdateParam) {
+        onUpdateParam("monthlyExpense", val);
+      }
+      handleCloseDerivationModal();
+    }
+  }, [formExpenseInput, onUpdateParam, handleCloseDerivationModal]);
+
 
   // Fetch live territory-specific inflation rate from World Bank API when unlocked
   useEffect(() => {
@@ -197,6 +412,11 @@ export default function MobileShell({
     }
   }, [userCountry, unlocks?.unlock_2]);
 
+  // Dynamically derived custom portfolio metrics
+  const customPortfolioMetrics = useMemo(() => {
+    return computeCustomPortfolioMetrics(customInvestments, monteCarloScenario);
+  }, [customInvestments, monteCarloScenario]);
+
   // Dynamic CAGR & Inflation parameters synchronized with the active Monte Carlo scenario
   // Decoupled, universally binding inflation and multi-asset covariance drag
   const scenarioParams = useMemo(() => {
@@ -205,19 +425,29 @@ export default function MobileShell({
     const countryInfo = getCountryInfo(userCountry);
     const wbInflation = typeof liveInflationRate === "number" ? liveInflationRate : countryInfo.defaultInflation;
 
-    // Item 3: Universal Inflation Spread Binding: pi_effective(s) = pi_base + delta_pi(s)
+    // Universal Inflation Spread Binding: pi_effective(s) = pi_base + delta_pi(s)
     const universalInf = computeUniversalInflation(monteCarloScenario, isTerritoryUnlocked, wbInflation);
 
-    // Item 2: Multi-Asset Growth Formula with Covariance Drag (unlock_3)
+    // Multi-Asset / Custom Growth Formula with Covariance Drag (unlock_3)
     let cagrValue = 8.0;
     let cagrTag = "Expected Real Growth";
+    let allocationTag = null;
 
     if (isCagrUnlocked) {
-      const multiAsset = computeMultiAssetPortfolio([0.60, 0.25, 0.10, 0.05], monteCarloScenario);
-      cagrValue = multiAsset.cagrPercent;
-      cagrTag = monteCarloScenario === "conservative"
-        ? "Defensive Asset Drag"
-        : (monteCarloScenario === "chaotic" ? "Crash Shock Yield" : "Multi-Asset Covariance Drag");
+      if (customInvestments && customInvestments.length > 0) {
+        cagrValue = customPortfolioMetrics.cagrPercent;
+        cagrTag = monteCarloScenario === "conservative"
+          ? "Defensive Custom Drag"
+          : (monteCarloScenario === "chaotic" ? "Crash Shock Custom Yield" : "Dynamic Covariance Drag");
+        allocationTag = `Portfolio: ${customInvestments.length} Asset${customInvestments.length > 1 ? "s" : ""}`;
+      } else {
+        const multiAsset = computeMultiAssetPortfolio([0.60, 0.25, 0.10, 0.05], monteCarloScenario);
+        cagrValue = multiAsset.cagrPercent;
+        cagrTag = monteCarloScenario === "conservative"
+          ? "Defensive Asset Drag"
+          : (monteCarloScenario === "chaotic" ? "Crash Shock Yield" : "Multi-Asset Covariance Drag");
+        allocationTag = "Model: Institutional";
+      }
     } else {
       if (monteCarloScenario === "conservative") {
         cagrValue = 6.0;
@@ -241,13 +471,14 @@ export default function MobileShell({
       cagr: cagrValue,
       inflation: universalInf.effectivePercent,
       cagrTag,
-      allocationTag: isCagrUnlocked ? "Model: Institutional" : null,
+      allocationTag,
       inflationTag,
       territoryTag: isTerritoryUnlocked ? `Territory: ${countryInfo.name}` : null,
       isCagrUnlocked,
       isTerritoryUnlocked
     };
-  }, [monteCarloScenario, unlocks?.unlock_2, unlocks?.unlock_3, userCountry, liveInflationRate]);
+  }, [monteCarloScenario, unlocks?.unlock_2, unlocks?.unlock_3, userCountry, liveInflationRate, customInvestments, customPortfolioMetrics]);
+
 
   // Compute metrics for the Member Hero Card dynamically based on the active Monte Carlo scenario
   const memberMetrics = useMemo(() => {
@@ -257,6 +488,18 @@ export default function MobileShell({
       inflation: scenarioParams.inflation
     });
   }, [simulationData, scenarioParams]);
+
+  // Live preview of FV monthly expense when editing in FV Exp modal
+  const previewFvExpense = useMemo(() => {
+    const exp = parseFloat(formExpenseInput) || 0;
+    const currentAge = memberMetrics.currentAge || 30;
+    const retireAge = memberMetrics.retireAge || 50;
+    const yearsToRetire = Math.max(1, retireAge - currentAge);
+    const monthsToRetire = yearsToRetire * 12;
+    const monthlyInf = (scenarioParams.inflation || 3.5) / 100 / 12;
+    return exp * Math.pow(1 + monthlyInf, monthsToRetire);
+  }, [formExpenseInput, memberMetrics.currentAge, memberMetrics.retireAge, scenarioParams.inflation]);
+
 
   // Compute impactful scenario explanation reflecting on-track or warning risk state
   const explanationText = useMemo(() => {
@@ -474,8 +717,13 @@ export default function MobileShell({
 
                   {/* Row 3: Est. Future Expense & Funded Pill */}
                   <div className="pt-1.5 border-t border-white/10 flex items-center justify-between text-[10.5px] sm:text-[11.5px] app-hero-panel-row leading-none">
-                    <div className="flex items-center gap-1">
-                      <span className="text-white/60 text-[8.5px] sm:text-[9.5px] font-medium uppercase leading-none">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenDerivationModal("fvExp")}
+                      className="flex items-center gap-1 cursor-pointer hover:opacity-90 active:scale-95 transition-all text-left group bg-transparent border-0 p-0"
+                      title="Click to view & edit Future Monthly Expense"
+                    >
+                      <span className="text-white/60 text-[8.5px] sm:text-[9.5px] font-medium uppercase leading-none group-hover:text-amber-200 transition-colors">
                         FV Exp:
                       </span>
                       <CurrencyDisplay
@@ -489,7 +737,9 @@ export default function MobileShell({
                         symbolGap="mr-0.5"
                       />
                       <span className="text-[8.5px] text-white/60 font-normal leading-none">/mo</span>
-                    </div>
+                      <Edit3 className="w-2.5 h-2.5 text-white/40 group-hover:text-amber-200 ml-0.5 transition-colors" />
+                    </button>
+
 
                     <span
                       className={`px-1.5 py-0.5 rounded text-[8.5px] sm:text-[9.5px] font-black leading-none ${
@@ -670,7 +920,7 @@ export default function MobileShell({
 
                     <div className="flex items-baseline gap-0.5 my-0.5">
                       <span className="text-[21px] sm:text-[24px] app-metric-value font-black text-[#1C1C1E] tracking-tight leading-none">
-                        {scenarioParams.cagr.toFixed(1)}
+                        {scenarioParams.isCagrUnlocked ? scenarioParams.cagr.toFixed(2) : scenarioParams.cagr.toFixed(1)}
                       </span>
                       <span className="text-[12.5px] sm:text-[14px] font-black text-[#8A6414] leading-none">
                         %
@@ -736,7 +986,7 @@ export default function MobileShell({
 
                     <div className="flex items-baseline gap-0.5 my-0.5">
                       <span className="text-[21px] sm:text-[24px] app-metric-value font-black text-[#1C1C1E] tracking-tight leading-none">
-                        {scenarioParams.inflation.toFixed(1)}
+                        {scenarioParams.isTerritoryUnlocked ? scenarioParams.inflation.toFixed(2) : scenarioParams.inflation.toFixed(1)}
                       </span>
                       <span className="text-[12.5px] sm:text-[14px] font-black text-[#8A6414] leading-none">
                         %
@@ -794,91 +1044,447 @@ export default function MobileShell({
           onClick={handleCloseDerivationModal}
         >
           <div
-            className={`w-[94%] sm:w-[85%] max-w-sm max-h-[72vh] overflow-y-auto no-scrollbar bg-white rounded-3xl p-4 sm:p-5 shadow-2xl border border-black/10 flex flex-col justify-between text-left select-none ${
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            className={`w-[94%] sm:w-[85%] max-w-sm ${
+              activeDerivationModal === "cagr" && cagrModalTab === "investments"
+                ? "h-[80vh] max-h-[580px]"
+                : "h-auto max-h-[85vh]"
+            } bg-white rounded-3xl p-4 sm:p-5 shadow-2xl border border-black/10 flex flex-col text-left select-none overflow-hidden ${
               isClosingDerivationModal ? "animate-modal-pop-out" : "animate-modal-pop"
             }`}
             onClick={(e) => e.stopPropagation()}
           >
             {activeDerivationModal === "cagr" && (
-              <div>
-                {/* Modal Header */}
-                <div className="flex items-start justify-between pb-2 mb-2 border-b border-black/5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-[#8A6414] border border-amber-500/20 shrink-0">
-                      <TrendingUp className="w-4 h-4 stroke-[2.5]" />
-                    </div>
-                    <div className="leading-tight">
-                      <h3 className="text-xs sm:text-sm font-black text-[#1C1C1E]">
-                        Weighted Growth CAGR
-                      </h3>
-                      <p className="text-[9.5px] sm:text-[10.5px] font-bold text-[#8A6414]">
-                        Institutional Covariance Drag Derivation
-                      </p>
-                    </div>
-                  </div>
+              <div className={`${cagrModalTab === "investments" ? "h-full justify-between" : ""} flex flex-col overflow-hidden`}>
+                {/* Modal Navigation Pill Switcher */}
+                <div className="shrink-0 flex items-center justify-between gap-1 p-0.5 bg-[#F2F2F7] rounded-xl mb-2 border border-black/5">
                   <button
                     type="button"
-                    onClick={handleCloseDerivationModal}
-                    className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                    onClick={() => setCagrModalTab("derivation")}
+                    className={`flex-1 py-1 px-2 rounded-lg text-[9.5px] sm:text-[10px] font-black transition-all cursor-pointer ${
+                      cagrModalTab === "derivation"
+                        ? "bg-white text-[#1C1C1E] shadow-sm"
+                        : "text-gray-500 hover:text-gray-800"
+                    }`}
                   >
-                    <X className="w-4 h-4" />
+                    Derivation Overview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCagrModalTab("investments")}
+                    className={`flex-1 py-1 px-2 rounded-lg text-[9.5px] sm:text-[10px] font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                      cagrModalTab === "investments"
+                        ? "bg-white text-[#8A6414] shadow-sm"
+                        : "text-gray-500 hover:text-[#8A6414]"
+                    }`}
+                  >
+                    <PieChart className="w-3 h-3" />
+                    <span>Setup Investments {customInvestments.length > 0 ? `(${customInvestments.length})` : ""}</span>
                   </button>
                 </div>
 
-                {/* Body Content */}
-                <div className="space-y-2 text-left text-gray-700">
-                  <p className="text-[10px] sm:text-[11px] leading-snug text-gray-800">
-                    Compound annual growth models real geometric accumulation over 20–40 years, rigorously accounting for <strong>volatility drag</strong> that erodes multi-decade wealth.
-                  </p>
-
-                  {/* Mathematical Formulation */}
-                  <div className="bg-[#F8F8FA] border border-black/5 rounded-xl p-2 sm:p-2.5">
-                    <div className="font-mono text-[10.5px] sm:text-[11.5px] text-gray-900 bg-white py-1 px-2 rounded-lg border border-black/5 overflow-x-auto text-center font-black">
-                      R_portfolio ≈ wᵀμ - ½ wᵀΣw
+                {/* VIEW 1: Derivation Overview */}
+                {cagrModalTab === "derivation" && (
+                  <div className="h-full flex flex-col justify-between overflow-hidden">
+                    {/* Modal Header */}
+                    <div className="shrink-0 flex items-start justify-between pb-1.5 mb-1.5 border-b border-black/5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-[#8A6414] border border-amber-500/20 shrink-0">
+                          <TrendingUp className="w-4 h-4 stroke-[2.5]" />
+                        </div>
+                        <div className="leading-tight">
+                          <h3 className="text-xs sm:text-sm font-black text-[#1C1C1E]">
+                            Weighted Growth CAGR
+                          </h3>
+                          <p className="text-[9px] sm:text-[10px] font-bold text-[#8A6414]">
+                            {customInvestments.length > 0 ? "Dynamic Multi-Holding Covariance Drag" : "Institutional Covariance Drag Derivation"}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCloseDerivationModal}
+                        className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                    <p className="text-[9px] sm:text-[9.5px] text-gray-500 mt-1 leading-tight">
-                      <strong>wᵀμ</strong> is arithmetic expected return ({scenarioParams.cagr.toFixed(1)}%), minus covariance drag (-0.58%) deducted to project true geometric growth.
-                    </p>
-                  </div>
 
-                  {/* Multi-Asset Asset Allocation Breakdown */}
-                  <div className="space-y-1">
-                    {INSTITUTIONAL_ASSETS.map((asset, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-[9.5px] sm:text-[10.5px] bg-gray-50 px-2 py-0.5 rounded-lg border border-black/5">
-                        <span className="font-bold text-gray-800 truncate pr-2">{asset.name}</span>
-                        <span className="font-mono font-black text-[#8A6414] shrink-0">
-                          {(asset.defaultWeight * 100).toFixed(0)}% (μ: {(asset.mu * 100).toFixed(1)}%)
+                    {/* Body Content - Scrollable if needed */}
+                    <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-2 pr-0.5 text-left text-gray-700">
+                      <p className="text-[9.5px] sm:text-[10.5px] leading-snug text-gray-800">
+                        Compound annual growth models geometric accumulation over 20–40 years, deducting <strong>volatility drag</strong> that erodes multi-decade wealth.
+                      </p>
+
+                      {/* Mathematical Formulation */}
+                      <div className="bg-[#F8F8FA] border border-black/5 rounded-xl p-2">
+                        <div className="font-mono text-[10px] sm:text-[11px] text-gray-900 bg-white py-1 px-2 rounded-lg border border-black/5 overflow-x-auto text-center font-black">
+                          R_portfolio ≈ wᵀμ - ½ wᵀΣw
+                        </div>
+                        <p className="text-[8.5px] sm:text-[9px] text-gray-500 mt-1 leading-tight">
+                          <strong>wᵀμ</strong> is arithmetic return ({customPortfolioMetrics.arithmeticPercent}%), minus covariance drag (-{customPortfolioMetrics.varianceDragPercent}%) deducted to project true geometric growth.
+                        </p>
+                      </div>
+
+                      {/* Dynamic Asset Allocation Breakdown List */}
+                      <div className="space-y-1">
+                        {customPortfolioMetrics.investments && customPortfolioMetrics.investments.length > 0 ? (
+                          customPortfolioMetrics.investments.map((asset, idx) => (
+                            <div key={asset.id || idx} className="flex items-center justify-between text-[9px] sm:text-[10px] bg-gray-50 px-2 py-1 rounded-lg border border-black/5">
+                              <div className="flex items-center gap-1.5 truncate pr-2">
+                                <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-[#8A6414] font-black text-[8.5px]">
+                                  {asset.symbol}
+                                </span>
+                                <span className="font-bold text-gray-800 truncate">{asset.name || asset.symbol}</span>
+                              </div>
+                              <span className="font-mono font-black text-[#8A6414] shrink-0 text-right">
+                                {asset.weightPercent}% <span className="text-gray-400 font-normal">(μ: {asset.cagr.toFixed(1)}%)</span>
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          INSTITUTIONAL_ASSETS.map((asset, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-[9px] sm:text-[10px] bg-gray-50 px-2 py-0.5 rounded-lg border border-black/5">
+                              <span className="font-bold text-gray-800 truncate pr-2">{asset.name}</span>
+                              <span className="font-mono font-black text-[#8A6414] shrink-0">
+                                {(asset.defaultWeight * 100).toFixed(0)}% (μ: {(asset.mu * 100).toFixed(1)}%)
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Telemetry Summary */}
+                      <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-2 flex items-center justify-between">
+                        <div>
+                          <span className="text-[8px] font-bold text-gray-500 block uppercase tracking-wider">
+                            Realized Compound CAGR
+                          </span>
+                          <span className="text-[15px] sm:text-[17px] font-black text-[#1C1C1E] leading-none">
+                            {scenarioParams.isCagrUnlocked ? scenarioParams.cagr.toFixed(2) : scenarioParams.cagr.toFixed(1)}% / yr
+                          </span>
+                        </div>
+                        <span className="text-[8px] sm:text-[8.5px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Drag Deducted (-{customPortfolioMetrics.varianceDragPercent}%)
                         </span>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Telemetry Summary */}
-                  <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-2 flex items-center justify-between">
-                    <div>
-                      <span className="text-[8.5px] font-bold text-gray-500 block uppercase tracking-wider">
-                        Realized Compound CAGR
-                      </span>
-                      <span className="text-[16px] sm:text-[18px] font-black text-[#1C1C1E] leading-none">
-                        {scenarioParams.cagr.toFixed(1)}% / yr
-                      </span>
                     </div>
-                    <span className="text-[8px] sm:text-[8.5px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Drag Deducted
-                    </span>
-                  </div>
-                </div>
 
-                {/* Modal Footer */}
-                <div className="pt-2 mt-2 border-t border-black/5 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handleCloseDerivationModal}
-                    className="w-full py-2 rounded-xl bg-[#1C1C1E] text-white text-xs font-black hover:bg-black transition-colors cursor-pointer"
-                  >
-                    Close Derivation
-                  </button>
-                </div>
+                    {/* Fixed Pinned Footer: Footnote & Close Button */}
+                    <div className="shrink-0 pt-2 border-t border-black/5 space-y-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setCagrModalTab("investments")}
+                        className="w-full p-2 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-amber-500/15 border border-amber-500/25 flex items-center justify-between text-[#8A6414] hover:border-amber-500/40 transition-all cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[11px]">👈</span>
+                          <div className="text-left leading-tight min-w-0">
+                            <p className="text-[9.5px] sm:text-[10px] font-black text-[#1C1C1E] truncate">
+                              Swipe left to setup investment
+                            </p>
+                            <p className="text-[8px] sm:text-[8.5px] font-medium text-gray-500 truncate">
+                              Add, edit & delete holdings with live 20-yr CAGR
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[8.5px] font-black flex items-center gap-1 bg-[#8A6414] text-white px-2 py-0.5 rounded-lg shrink-0 group-hover:scale-105 transition-transform">
+                          Setup →
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleCloseDerivationModal}
+                        className="w-full py-2 rounded-xl bg-[#1C1C1E] text-white text-xs font-black hover:bg-black transition-colors cursor-pointer"
+                      >
+                        Close Derivation
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* VIEW 2: Custom Investment Setup */}
+                {cagrModalTab === "investments" && (
+                  <div className="h-full flex flex-col justify-between overflow-hidden">
+                    {/* Fixed Header */}
+                    <div className="shrink-0 flex items-start justify-between pb-1.5 mb-1.5 border-b border-black/5">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCagrModalTab("derivation")}
+                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-700 transition-colors cursor-pointer shrink-0"
+                          title="Back to Derivation Overview"
+                        >
+                          <ArrowLeft className="w-4 h-4" />
+                        </button>
+                        <div className="leading-tight">
+                          <h3 className="text-xs sm:text-sm font-black text-[#1C1C1E]">
+                            Setup Investments
+                          </h3>
+                          <p className="text-[9px] sm:text-[10px] font-bold text-[#8A6414]">
+                            Holdings & Allocation Breakdown
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCloseDerivationModal}
+                        className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Fixed Add / Edit Holding Form */}
+                    <div className="shrink-0 mb-1.5">
+                      <form onSubmit={handleAddOrUpdateHolding} className="bg-[#F8F8FA] border border-black/5 rounded-2xl p-2 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] sm:text-[9.5px] font-black text-[#1C1C1E] uppercase tracking-wider">
+                            {editingHoldingId ? "Edit Holding" : "Add Investment Holding"}
+                          </span>
+                          {editingHoldingId && (
+                            <button
+                              type="button"
+                              onClick={handleCancelEdit}
+                              className="text-[8.5px] font-bold text-gray-500 hover:text-gray-800"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Input Row: Symbol, Units, Price */}
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <div>
+                            <label className="text-[7.5px] font-bold text-gray-500 block mb-0.5">
+                              Symbol
+                            </label>
+                            <input
+                              type="text"
+                              value={formSymbol}
+                              onChange={(e) => {
+                                setFormSymbol(e.target.value.toUpperCase());
+                                setTickerFeedback(null);
+                              }}
+                              onBlur={() => {
+                                if (formSymbol.trim()) handleFetchTickerInfo(formSymbol);
+                              }}
+                              placeholder="e.g. VWRA"
+                              className="w-full bg-white border border-black/10 rounded-lg px-2 py-1 text-[10px] font-black text-[#1C1C1E] focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[7.5px] font-bold text-gray-500 block mb-0.5">
+                              Units
+                            </label>
+                            <input
+                              type="number"
+                              step="any"
+                              min="0"
+                              value={formUnits}
+                              onChange={(e) => setFormUnits(e.target.value)}
+                              placeholder="e.g. 80"
+                              className="w-full bg-white border border-black/10 rounded-lg px-2 py-1 text-[10px] font-black text-[#1C1C1E] focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[7.5px] font-bold text-gray-500 block mb-0.5">
+                              Price ($)
+                            </label>
+                            <input
+                              type="number"
+                              step="any"
+                              min="0"
+                              value={formPrice}
+                              onChange={(e) => setFormPrice(e.target.value)}
+                              placeholder="e.g. 191.66"
+                              className="w-full bg-white border border-black/10 rounded-lg px-2 py-1 text-[10px] font-black text-[#1C1C1E] focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Live Ticker Feedback Badge */}
+                        {isFetchingTicker && (
+                          <div className="flex items-center gap-1 text-[8px] text-[#8A6414] font-bold">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Fetching live 20-yr historical market CAGR...</span>
+                          </div>
+                        )}
+                        {tickerFeedback && (
+                          <div className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md ${tickerFeedback.success ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-red-50 text-red-700"}`}>
+                            {tickerFeedback.text}
+                          </div>
+                        )}
+
+                        <button
+                          type="submit"
+                          disabled={!formSymbol || !formUnits || !formPrice}
+                          className="w-full py-1.5 rounded-xl bg-[#8A6414] text-white text-[10px] font-black hover:bg-[#684b0f] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          {editingHoldingId ? (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Update Holding</span>
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Add Investment Holding</span>
+                            </>
+                          )}
+                        </button>
+                      </form>
+                    </div>
+
+                    {/* Fixed Portfolio Allocation Breakdown Header & Visual Bar */}
+                    {customPortfolioMetrics.investments && customPortfolioMetrics.investments.length > 0 && (
+                      <div className="shrink-0 space-y-1 mb-1">
+                        <div className="flex items-center justify-between text-[8.5px] font-black text-gray-600">
+                          <span>Portfolio Allocation Breakdown</span>
+                          <span className="font-mono text-[#8A6414]">
+                            Total: ${customPortfolioMetrics.totalPortfolioValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+
+                        <div className="w-full h-2.5 rounded-full overflow-hidden bg-gray-200 flex border border-black/5">
+                          {customPortfolioMetrics.investments.map((asset, idx) => {
+                            const colors = [
+                              "bg-amber-500",
+                              "bg-sky-500",
+                              "bg-emerald-500",
+                              "bg-purple-500",
+                              "bg-rose-500",
+                              "bg-indigo-500"
+                            ];
+                            const colorClass = colors[idx % colors.length];
+                            return (
+                              <div
+                                key={asset.id || idx}
+                                style={{ width: `${asset.weightPercent}%` }}
+                                className={`${colorClass} h-full transition-all`}
+                                title={`${asset.symbol}: ${asset.weightPercent}%`}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ONLY SCROLLABLE REGION: Holdings List Content Cards */}
+                    <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-1.5 pr-0.5">
+                      {customPortfolioMetrics.investments && customPortfolioMetrics.investments.length > 0 ? (
+                        customPortfolioMetrics.investments.map((asset, idx) => {
+                          const colors = ["text-amber-600", "text-sky-600", "text-emerald-600", "text-purple-600", "text-rose-600"];
+                          const colorClass = colors[idx % colors.length];
+                          return (
+                            <div
+                              key={asset.id || idx}
+                              className="bg-white p-2 rounded-xl border border-black/8 shadow-xs flex items-center justify-between gap-2"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                  <span className={`font-black text-[10.5px] ${colorClass}`}>
+                                    {asset.symbol}
+                                  </span>
+                                  <span className="text-[7.5px] font-black px-1.5 py-0.2 rounded bg-gray-100 text-gray-700">
+                                    {asset.weightPercent}%
+                                  </span>
+                                  <span className="text-[7.5px] font-bold text-gray-400 truncate">
+                                    {asset.name}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 text-[8.5px] font-bold text-gray-500 font-mono">
+                                  <span>{asset.units} units @ ${asset.price.toFixed(2)}</span>
+                                  <span className="text-gray-900 font-black">
+                                    = ${asset.value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                                <div className="text-[7.5px] font-bold text-[#8A6414] mt-0.5">
+                                  20-Yr Benchmark CAGR: {asset.cagr.toFixed(1)}% (σ: {(asset.sigma * 100).toFixed(1)}%)
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEditHolding(asset)}
+                                  className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+                                  title="Edit holding"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteHolding(asset.id)}
+                                  className="p-1 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors cursor-pointer"
+                                  title="Delete holding"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="text-center py-4 px-3 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                          <p className="text-[10px] font-black text-gray-700">No Investments Configured Yet</p>
+                          <p className="text-[8.5px] font-bold text-gray-400 mt-0.5">Enter a symbol (e.g. VWRA, CNDX), units and price above to calculate your allocation breakdown.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Fixed Pinned Footer: Portfolio Summary & Action Button */}
+                    <div className="shrink-0 pt-1.5 border-t border-black/5 space-y-1.5">
+                      {/* Portfolio Summary Card */}
+                      <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-1.5 flex items-center justify-between">
+                        <div>
+                          <span className="text-[7.5px] font-bold text-gray-500 block uppercase tracking-wider">
+                            Realized Portfolio CAGR
+                          </span>
+                          <span className="text-[14px] sm:text-[16px] font-black text-[#1C1C1E] leading-none">
+                            {customPortfolioMetrics.cagrPercent}% / yr
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[7.5px] font-bold text-gray-500 block">
+                            Arithmetic μ: {customPortfolioMetrics.arithmeticPercent}%
+                          </span>
+                          <span className="text-[7.5px] font-bold text-emerald-700">
+                            Drag: -{customPortfolioMetrics.varianceDragPercent}%
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[8px] font-bold text-gray-400">
+                        {customInvestments.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleSaveInvestments([])}
+                            className="text-red-500 hover:text-red-700 flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-2.5 h-2.5" />
+                            <span>Clear all holdings</span>
+                          </button>
+                        )}
+                        <span className="ml-auto">
+                          👉 Swipe right for Derivation Overview
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setCagrModalTab("derivation")}
+                        className="w-full py-2 rounded-xl bg-[#1C1C1E] text-white text-xs font-black hover:bg-black transition-colors cursor-pointer"
+                      >
+                        Done & View Derivation
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -917,17 +1523,17 @@ export default function MobileShell({
                   {/* Universal Formula */}
                   <div className="bg-[#F8F8FA] border border-black/5 rounded-xl p-2 sm:p-2.5">
                     <div className="font-mono text-[10.5px] sm:text-[11.5px] text-gray-900 bg-white py-1 px-2 rounded-lg border border-black/5 overflow-x-auto text-center font-black">
-                      π_effective(s) = π_base + Δπ(s)
+                      π_effective(s) = π_base × M(s)
                     </div>
                     <div className="mt-1.5 space-y-0.5 text-[9.5px] text-gray-600">
                       <div className="flex justify-between">
                         <span>World Bank 10-Yr (π_base):</span>
-                        <strong className="font-mono text-gray-900">{(liveInflationRate ?? getCountryInfo(userCountry).defaultInflation).toFixed(1)}%</strong>
+                        <strong className="font-mono text-gray-900">{(liveInflationRate ?? getCountryInfo(userCountry).defaultInflation).toFixed(2)}%</strong>
                       </div>
                       <div className="flex justify-between">
-                        <span>Scenario Spread (Δπ):</span>
+                        <span>Scenario Multiplier M(s):</span>
                         <strong className="font-mono text-[#8A6414]">
-                          {monteCarloScenario === "chaotic" ? "+2.5% (Chaotic)" : (monteCarloScenario === "conservative" ? "+0.7% (Conservative)" : "+0.0% (Standard)")}
+                          {monteCarloScenario === "chaotic" ? "1.35x (+35% Shock)" : (monteCarloScenario === "conservative" ? "1.15x (+15% Stress)" : "1.00x (Standard)")}
                         </strong>
                       </div>
                     </div>
@@ -947,7 +1553,7 @@ export default function MobileShell({
                         Effective Annual Cost Drag
                       </span>
                       <span className="text-[16px] sm:text-[18px] font-black text-[#1C1C1E] leading-none">
-                        {scenarioParams.inflation.toFixed(1)}% / yr
+                        {scenarioParams.isTerritoryUnlocked ? scenarioParams.inflation.toFixed(2) : scenarioParams.inflation.toFixed(1)}% / yr
                       </span>
                     </div>
                     <span className="text-[8px] sm:text-[8.5px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-[#8A6414] border border-amber-200">
@@ -964,6 +1570,134 @@ export default function MobileShell({
                     className="w-full py-2 rounded-xl bg-[#1C1C1E] text-white text-xs font-black hover:bg-black transition-colors cursor-pointer"
                   >
                     Close Derivation
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeDerivationModal === "fvExp" && (
+              <div className="flex flex-col gap-2 overflow-hidden">
+                {/* Modal Header */}
+                <div className="shrink-0 flex items-start justify-between pb-1.5 mb-0.5 border-b border-black/5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-[#8A6414] border border-amber-500/20 shrink-0">
+                      <TrendingUp className="w-4 h-4 stroke-[2.5]" />
+                    </div>
+                    <div className="leading-tight">
+                      <h3 className="text-xs sm:text-sm font-black text-[#1C1C1E]">
+                        Future Monthly Expense (FV Exp)
+                      </h3>
+                      <p className="text-[9px] sm:text-[10px] font-bold text-[#8A6414]">
+                        Inflation-Compounded Living Cost
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCloseDerivationModal}
+                    className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Body Content */}
+                <div className="space-y-2 pr-0.5 text-left text-gray-700">
+                  <p className="text-[9.5px] sm:text-[10.5px] leading-snug text-gray-800">
+                    <strong>FV Exp</strong> projects your required monthly living cost when you retire at age <strong>{memberMetrics.retireAge}</strong> ({memberMetrics.retireYear}), accounting for compounding inflation over your accumulation years.
+                  </p>
+
+                  {/* Mathematical Compounding Formula */}
+                  <div className="bg-[#F8F8FA] border border-black/5 rounded-xl p-2">
+                    <div className="font-mono text-[10px] sm:text-[11px] text-gray-900 bg-white py-1 px-2 rounded-lg border border-black/5 overflow-x-auto text-center font-black">
+                      FV = C_0 × (1 + π_monthly)^m
+                    </div>
+                    <p className="text-[8.5px] sm:text-[9px] text-gray-500 mt-1 leading-tight">
+                      Compounds today&apos;s expenses forward over <strong>{Math.max(1, memberMetrics.retireAge - memberMetrics.currentAge)} years</strong> ({Math.max(1, memberMetrics.retireAge - memberMetrics.currentAge) * 12} months) at <strong>{scenarioParams.inflation.toFixed(1)}% annual inflation</strong>.
+                    </p>
+                  </div>
+
+                  {/* Interactive Monthly Expense Edit Form */}
+                  <form onSubmit={handleSaveMonthlyExpense} className="bg-white border border-black/10 rounded-2xl p-2.5 shadow-xs space-y-2">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[8.5px] font-bold text-gray-600 block uppercase tracking-wider">
+                          Current Monthly Expense ({currencySymbol})
+                        </label>
+                        <span className="text-[8.5px] font-bold text-[#8A6414]">
+                          Age {memberMetrics.currentAge} living cost
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-black text-gray-400 text-xs">
+                          {currencySymbol}
+                        </span>
+                        <input
+                          type="number"
+                          step="50"
+                          min="100"
+                          value={formExpenseInput}
+                          onChange={(e) => setFormExpenseInput(e.target.value)}
+                          className="w-full bg-[#F8F8FA] border border-black/10 rounded-xl pl-6 pr-3 py-1.5 text-xs sm:text-sm font-black text-[#1C1C1E] focus:outline-none focus:border-amber-500"
+                          placeholder="e.g. 3000"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Quick delta buttons */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[8px] font-bold text-gray-400">Quick adjust:</span>
+                      {[-500, -200, +200, +500].map((delta) => (
+                        <button
+                          key={delta}
+                          type="button"
+                          onClick={() => {
+                            const curr = parseFloat(formExpenseInput) || 3000;
+                            setFormExpenseInput(Math.max(100, curr + delta).toString());
+                          }}
+                          className="px-1.5 py-0.5 rounded-md bg-gray-100 hover:bg-amber-50 hover:text-[#8A6414] text-[8.5px] font-bold text-gray-600 transition-colors cursor-pointer border border-black/5"
+                        >
+                          {delta > 0 ? `+${delta}` : delta}
+                        </button>
+                      ))}
+                    </div>
+                  </form>
+
+                  {/* Impact Summary Comparison */}
+                  <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-2 flex items-center justify-between">
+                    <div>
+                      <span className="text-[8px] font-bold text-gray-500 block uppercase tracking-wider">
+                        Projected FV Expense
+                      </span>
+                      <span className="text-[15px] sm:text-[17px] font-black text-[#1C1C1E] leading-none">
+                        {currencySymbol}{Math.round(previewFvExpense).toLocaleString()} <span className="text-[9px] font-bold text-gray-500">/ mo</span>
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-[#8A6414] border border-amber-300">
+                        {((previewFvExpense / (Math.max(1, parseFloat(formExpenseInput) || 1)))).toFixed(2)}x Inflation Drag
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fixed Pinned Footer: Save & Close Buttons */}
+                <div className="shrink-0 pt-2 border-t border-black/5 space-y-1.5">
+                  <button
+                    type="button"
+                    onClick={handleSaveMonthlyExpense}
+                    className="w-full py-2 rounded-xl bg-[#8A6414] text-white text-xs font-black hover:bg-[#684b0f] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save & Update Plan</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCloseDerivationModal}
+                    className="w-full py-1.5 rounded-xl bg-gray-100 text-gray-700 text-xs font-black hover:bg-gray-200 transition-colors cursor-pointer"
+                  >
+                    Cancel
                   </button>
                 </div>
               </div>

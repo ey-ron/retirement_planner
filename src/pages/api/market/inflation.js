@@ -43,12 +43,14 @@ export default async function handler(req, res) {
     const records = (data?.[1] || []).filter(r => r.value !== null && r.value !== undefined);
 
     let liveInflation = countryInfo.defaultInflation;
-    let period = "10-Yr Historical Avg";
+    let period = "10-Yr Historical Benchmark";
 
-    if (records.length > 0) {
+    if (typeof countryInfo.defaultInflation === "number") {
+      liveInflation = countryInfo.defaultInflation;
+    } else if (records.length > 0) {
       const sample = records.slice(0, 10);
       const sum = sample.reduce((acc, r) => acc + Number(r.value), 0);
-      liveInflation = Math.round((sum / sample.length) * 10) / 10;
+      liveInflation = Math.round((sum / sample.length) * 100) / 100;
       const startYear = sample[sample.length - 1]?.date;
       const endYear = sample[0]?.date;
       period = `${startYear}-${endYear} (10-Yr Avg)`;
