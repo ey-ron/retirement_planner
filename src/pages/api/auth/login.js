@@ -1,8 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
+function getSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    "";
+  if (!supabaseUrl || !supabaseKey) return null;
+  return createClient(supabaseUrl, supabaseKey);
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -17,6 +24,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "Please provide a valid email address." });
     }
 
+    const supabase = getSupabase();
+    if (!supabase) {
+      return res.status(500).json({
+        success: false,
+        message: "Database connection not configured. Please check Supabase environment variables."
+      });
+    }
+
     try {
       // 1. Fetch member profile (resilient select)
       const { data: license, error: licErr } = await supabase
@@ -24,6 +39,14 @@ export default async function handler(req, res) {
         .select("*")
         .ilike("email", cleanEmail)
         .maybeSingle();
+
+      if (licErr) {
+        console.error("[Login API] Supabase query error:", licErr.message);
+        return res.status(500).json({
+          success: false,
+          message: `Database error: ${licErr.message}`
+        });
+      }
 
       if (!licErr && license) {
         // Record timestamp for last login / access

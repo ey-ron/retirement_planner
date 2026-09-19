@@ -8,17 +8,20 @@ export const UNLOCKABLE_DEFINITIONS = [
   {
     id: "unlock_1",
     name: "Professional Institutional Standard",
-    desc: "10,000+ stochastic sequence-of-returns variance simulation & risk modeling"
+    desc: "10,000+ stochastic sequence-of-returns variance simulation & risk modeling",
+    bmcUrl: "https://buymeacoffee.com/zxero/e/577219"
   },
   {
     id: "unlock_2",
     name: "Territory Based Inflation",
-    desc: "Real-time regional & country CPI feeds for location-specific annual cost drag"
+    desc: "Real-time regional & country CPI feeds for location-specific annual cost drag",
+    bmcUrl: "https://buymeacoffee.com/zxero/e/577221"
   },
   {
     id: "unlock_3",
     name: "Weighted Growth CAGR",
-    desc: "Dynamic multi-asset allocation based on 20-year annual average market returns"
+    desc: "Dynamic multi-asset allocation based on 20-year annual average market returns",
+    bmcUrl: "https://buymeacoffee.com/zxero/e/577222"
   }
 ];
 
@@ -52,20 +55,9 @@ export default function AuthModal({
   })();
 
   const handleUnlockClick = (def) => {
-    const updatedUnlocks = { ...unlocks, [def.id]: "Unlocked" };
+    const checkoutUrl = def.bmcUrl || "https://buymeacoffee.com/zxero";
     if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("retirement_unlocks", JSON.stringify(updatedUnlocks));
-      } catch (e) {}
-    }
-    if (onAuthSuccess) {
-      onAuthSuccess({
-        name: proName || name,
-        email: storedEmail || email,
-        country,
-        planData: currentPlan,
-        unlocks: updatedUnlocks
-      });
+      window.open(checkoutUrl, "_blank", "noopener,noreferrer");
     }
   };
 

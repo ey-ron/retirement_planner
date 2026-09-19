@@ -85,7 +85,32 @@ export default async function handler(req, res) {
     const orderId = String(data.order_id || data.id || payload.event_id || "");
     const amount = data.amount || data.total_amount || 0;
 
-    console.log(`[BMC Webhook] Processing event: ${eventType} for ${userEmail || "anonymous"} (Order: ${orderId})`);
+    const extrasList = Array.isArray(data.extras) ? data.extras : (data.extra ? [data.extra] : []);
+    const unlockPatch = {
+      is_pro: true
+    };
+
+    extrasList.forEach((extra) => {
+      const extraId = String(extra.id || "");
+      const title = String(extra.title || "").toLowerCase();
+
+      if (extraId === "577219" || title.includes("monte")) {
+        unlockPatch.unlock_1 = "Unlocked";
+      }
+      if (extraId === "577221" || title.includes("inflation") || title.includes("territory")) {
+        unlockPatch.unlock_2 = "Unlocked";
+      }
+      if (extraId === "577222" || title.includes("cagr") || title.includes("weighted") || title.includes("growth")) {
+        unlockPatch.unlock_3 = "Unlocked";
+      }
+    });
+
+    // If general donation / support or all unlocks
+    if (eventType.includes("donation") || eventType.includes("support")) {
+      unlockPatch.unlock_1 = "Unlocked";
+      unlockPatch.unlock_2 = "Unlocked";
+      unlockPatch.unlock_3 = "Unlocked";
+    }
 
     if (userEmail && userEmail.includes("@")) {
       const supabase = getSupabase();
@@ -96,7 +121,7 @@ export default async function handler(req, res) {
             {
               email: userEmail,
               name: userName || "Supporter",
-              is_pro: true,
+              ...unlockPatch,
               lemon_order_id: `bmc_${orderId}`,
               updated_at: new Date().toISOString()
             },
@@ -106,7 +131,7 @@ export default async function handler(req, res) {
         if (upsertErr) {
           console.error("[BMC Webhook] Supabase upsert error:", upsertErr.message);
         } else {
-          console.log(`[BMC Webhook] Successfully activated Pro license for: ${userEmail}`);
+          console.log(`[BMC Webhook] Successfully recorded unlocks for: ${userEmail}`, unlockPatch);
         }
       }
     }
